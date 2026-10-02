@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # Si no está configurada, las pruebas que necesitan base de datos se omiten.
     test_database_url: str | None = None
 
+    # Direcciones web (frontend) autorizadas para llamar a esta API desde el navegador (CORS).
+    cors_origenes: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
     @property
     def sqlalchemy_url(self) -> str:
         return a_url_sqlalchemy(self.database_url)
