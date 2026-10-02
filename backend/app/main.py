@@ -5,18 +5,22 @@ Levantar (desde la carpeta backend/, con el entorno virtual activado):
 """
 from fastapi import FastAPI
 
-from app.routers import auth, health
+from app.logs import configurar_logs
+from app.routers import auth, health, tableros
+
+configurar_logs()
 
 # Crea la aplicación. title y version aparecen en la documentación automática (/docs).
 app = FastAPI(
     title="ElectroMap API",
     description="Backend del sistema de monitoreo de tableros eléctricos.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 # Registra las rutas de cada módulo.
 app.include_router(health.router)
 app.include_router(auth.router)
+app.include_router(tableros.router)
 
 
 @app.get("/")
