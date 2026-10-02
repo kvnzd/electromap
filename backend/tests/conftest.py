@@ -105,6 +105,7 @@ def escenario(db):
         "cli_a2": Usuario(nombre_usuario="t_cli_a2", password_hash=pw, rol="cliente", cliente_id=cli_a2.id),
     }
     db.add_all(usr.values()); db.flush()
+    usr["cli_b1_id"] = cli_b1.id  # id de un cliente de la empresa B (para probar accesos cruzados)
     return {"tableros": tab, "usuarios": usr}
 
 
