@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.deps import get_usuario_actual
+from app.deps import cuenta_habilitada, get_usuario_actual
 from app.models import Usuario
 from app.schemas import TokenOut, UsuarioOut
 from app.security import crear_token, verificar_password
@@ -25,8 +25,8 @@ def login(
     # así nadie puede averiguar qué nombres de usuario existen.
     if (
         usuario is None
-        or not usuario.activo
         or not verificar_password(form.password, usuario.password_hash)
+        or not cuenta_habilitada(db, usuario)
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
