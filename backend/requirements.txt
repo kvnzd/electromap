@@ -1,0 +1,7 @@
+# Dependencias del backend de ElectroMap
+# Instalar con: pip install -r requirements.txt
+fastapi==0.142.*
+uvicorn[standard]==0.54.*
+sqlalchemy==2.1.*
+psycopg[binary]==3.3.*
+pydantic-settings==2.15.*
