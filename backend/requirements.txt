@@ -1,0 +1,4 @@
+# Dependencias del backend de ElectroMap
+# Instalar con: pip install -r requirements.txt
+fastapi==0.142.*
+uvicorn[standard]==0.54.*
