@@ -1,0 +1,16 @@
+# Secretos: la conexión a Railway NUNCA se sube
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node (frontend, más adelante)
+node_modules/
+dist/
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
