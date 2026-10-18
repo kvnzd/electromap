@@ -10,4 +10,4 @@
 
 - Login con autenticación JWT.
 - Panel de administración con los tres roles del sistema: VSC, empresa y cliente.
-- Aislamiento multi-tenant: cada rol ve y puede modificar solo lo que le corresponde según su nivel de acceso (ver `claude/Proceso_Asignacion_Accesos.md` y Documento 05 — Documento de Diseño para el detalle de las reglas).
+- Aislamiento multi-tenant: cada rol ve y puede modificar solo lo que le corresponde según su nivel de acceso (ver Documento 05 — Documento de Diseño para el detalle de las reglas).
