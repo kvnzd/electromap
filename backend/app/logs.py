@@ -1,7 +1,8 @@
-"""Configuración del registro (log) de seguridad.
+"""Configuración de los registros (logs) del sistema.
 
-Los intentos de acceso denegados se escriben en backend/logs/seguridad.log
-(carpeta excluida de Git) y también se muestran en la terminal.
+- logs/seguridad.log : intentos de acceso denegados.
+- logs/auditoria.log : acciones de administración (quién creó/editó qué).
+La carpeta logs/ está excluida de Git. También se muestran en la terminal.
 """
 import logging
 from pathlib import Path
@@ -9,18 +10,23 @@ from pathlib import Path
 CARPETA_LOGS = Path(__file__).resolve().parent.parent / "logs"
 
 
-def configurar_logs() -> None:
-    log = logging.getLogger("electromap.seguridad")
+def _configurar(nombre_logger: str, archivo: str, nivel: int) -> None:
+    log = logging.getLogger(nombre_logger)
     if log.handlers:  # ya configurado (evita duplicar al recargar)
         return
     CARPETA_LOGS.mkdir(exist_ok=True)
     formato = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 
-    archivo = logging.FileHandler(CARPETA_LOGS / "seguridad.log", encoding="utf-8")
-    archivo.setFormatter(formato)
-    consola = logging.StreamHandler()
-    consola.setFormatter(formato)
+    a_archivo = logging.FileHandler(CARPETA_LOGS / archivo, encoding="utf-8")
+    a_archivo.setFormatter(formato)
+    a_consola = logging.StreamHandler()
+    a_consola.setFormatter(formato)
 
-    log.addHandler(archivo)
-    log.addHandler(consola)
-    log.setLevel(logging.INFO)
+    log.addHandler(a_archivo)
+    log.addHandler(a_consola)
+    log.setLevel(nivel)
+
+
+def configurar_logs() -> None:
+    _configurar("electromap.seguridad", "seguridad.log", logging.INFO)
+    _configurar("electromap.auditoria", "auditoria.log", logging.INFO)
