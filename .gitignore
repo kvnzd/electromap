@@ -5,6 +5,7 @@
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
 
 # Node (frontend, más adelante)
 node_modules/
