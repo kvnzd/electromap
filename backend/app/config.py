@@ -17,14 +17,21 @@ class Settings(BaseSettings):
     jwt_algoritmo: str = "HS256"
     jwt_expira_minutos: int = 480
 
+    # Base de datos SOLO para pruebas automáticas (pytest). Debe ser distinta de la real.
+    # Si no está configurada, las pruebas que necesitan base de datos se omiten.
+    test_database_url: str | None = None
+
     @property
     def sqlalchemy_url(self) -> str:
-        """Railway entrega 'postgresql://...'; SQLAlchemy necesita indicar el driver psycopg."""
-        url = self.database_url
-        for prefijo in ("postgres://", "postgresql://"):
-            if url.startswith(prefijo):
-                return "postgresql+psycopg://" + url[len(prefijo):]
-        return url
+        return a_url_sqlalchemy(self.database_url)
+
+
+def a_url_sqlalchemy(url: str) -> str:
+    """Railway entrega 'postgresql://...'; SQLAlchemy necesita indicar el driver psycopg."""
+    for prefijo in ("postgres://", "postgresql://"):
+        if url.startswith(prefijo):
+            return "postgresql+psycopg://" + url[len(prefijo):]
+    return url
 
 
 settings = Settings()

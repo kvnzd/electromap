@@ -21,3 +21,14 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     usuario: UsuarioOut
+
+
+class TableroOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    sucursal_id: int
+    codigo: str
+    nombre: str
+    ubicacion: str | None
+    amperaje_nominal: float | None

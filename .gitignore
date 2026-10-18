@@ -7,6 +7,9 @@ __pycache__/
 .venv/
 .pytest_cache/
 
+# Logs (pueden contener nombres de usuario e IPs)
+logs/
+
 # Node (frontend, más adelante)
 node_modules/
 dist/
