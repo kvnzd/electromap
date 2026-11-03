@@ -1,15 +1,4 @@
-"""Reglas de autorización multi-tenant: qué puede ver y editar cada usuario.
 
-Jerarquía: empresa -> cliente -> sucursal -> tablero.
-- rol 'vsc'     : ve y administra todo.
-- rol 'empresa' : ve solo lo de SU empresa (sus clientes, sucursales y tableros).
-                  Puede administrarlo solo si puede_editar = TRUE.
-- rol 'cliente' : ve solo lo suyo (sus sucursales y tableros). NUNCA edita
-                  (la BBDD también lo impide, pero el backend no depende solo de eso).
-
-Todo intento fuera de scope se rechaza (403) y se registra en logs/seguridad.log.
-Las acciones de administración se registran en logs/auditoria.log.
-"""
 import logging
 
 from fastapi import Depends, HTTPException, status
@@ -17,7 +6,7 @@ from sqlalchemy import Select, or_, select
 from sqlalchemy.orm import Session
 
 from app.deps import get_usuario_actual
-from app.models import Cliente, Empresa, Sucursal, Tablero, Usuario
+from app.models import Circuito, Cliente, Dispositivo, Empresa, Sucursal, Tablero, Usuario
 
 log_seguridad = logging.getLogger("electromap.seguridad")
 log_auditoria = logging.getLogger("electromap.auditoria")
@@ -99,6 +88,42 @@ def tableros_visibles(usuario: Usuario, incluir_inactivos: bool = False) -> Sele
         return consulta.where(Sucursal.cliente_id == usuario.cliente_id)
     return consulta.where(False)
 
+def dispositivos_visibles(usuario: Usuario, incluir_inactivos: bool = False) -> Select:
+    """AcuRev que el usuario puede ver: los instalados en tableros de su ámbito."""
+    consulta = _solo_activos(
+        select(Dispositivo)
+        .join(Tablero, Dispositivo.tablero_id == Tablero.id)
+        .join(Sucursal, Tablero.sucursal_id == Sucursal.id)
+        .join(Cliente, Sucursal.cliente_id == Cliente.id),
+        Dispositivo,
+        incluir_inactivos,
+    )
+    if usuario.rol == "vsc":
+        return consulta
+    if usuario.rol == "empresa":
+        return consulta.where(Cliente.empresa_id == usuario.empresa_id)
+    if usuario.rol == "cliente":
+        return consulta.where(Sucursal.cliente_id == usuario.cliente_id)
+    return consulta.where(False)
+
+
+def circuitos_visibles(usuario: Usuario, incluir_inactivos: bool = False) -> Select:
+    """Circuitos que el usuario puede ver: los de tableros de su ámbito."""
+    consulta = _solo_activos(
+        select(Circuito)
+        .join(Tablero, Circuito.tablero_id == Tablero.id)
+        .join(Sucursal, Tablero.sucursal_id == Sucursal.id)
+        .join(Cliente, Sucursal.cliente_id == Cliente.id),
+        Circuito,
+        incluir_inactivos,
+    )
+    if usuario.rol == "vsc":
+        return consulta
+    if usuario.rol == "empresa":
+        return consulta.where(Cliente.empresa_id == usuario.empresa_id)
+    if usuario.rol == "cliente":
+        return consulta.where(Sucursal.cliente_id == usuario.cliente_id)
+    return consulta.where(False)
 
 def usuarios_visibles(usuario: Usuario, incluir_inactivos: bool = False) -> Select:
     consulta = _solo_activos(select(Usuario), Usuario, incluir_inactivos)
