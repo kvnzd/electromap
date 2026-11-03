@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.logs import configurar_logs
-from app.routers import auth, circuitos, clientes, dispositivos, empresas, health, sucursales, tableros, usuarios
+from app.routers import auth, circuitos, clientes, dispositivos, empresas, health, ingesta, sucursales, tableros, usuarios
 
 configurar_logs()
 
@@ -37,6 +37,7 @@ app.include_router(sucursales.router)
 app.include_router(tableros.router)
 app.include_router(dispositivos.router)
 app.include_router(circuitos.router)
+app.include_router(ingesta.router)
 app.include_router(usuarios.router)
 
 
