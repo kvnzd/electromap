@@ -2,6 +2,7 @@
 
 Así las contraseñas y claves nunca quedan escritas en el código.
 """
+from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -23,7 +24,12 @@ class Settings(BaseSettings):
 
     # Direcciones web (frontend) autorizadas para llamar a esta API desde el navegador (CORS).
     cors_origenes: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
-
+    # Ingesta del AcuRev (Etapa 11): carpeta donde se guarda cada envío tal como llega
+    # (registrador temporal para conocer el formato real; excluida de Git).
+    ingesta_carpeta: Path = Path(__file__).resolve().parent.parent / "ingesta_recibida"
+    # Tamaño máximo aceptado por envío (bytes). Protege el disco ante envíos abusivos.
+    ingesta_max_bytes: int = 5_000_000
+    
     @property
     def sqlalchemy_url(self) -> str:
         return a_url_sqlalchemy(self.database_url)
