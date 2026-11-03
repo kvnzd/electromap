@@ -1,10 +1,4 @@
-"""Formatos de entrada y salida de la API (JSON).
-
-- *Out: lo que el backend DEVUELVE. Nunca incluye password_hash.
-- *Crear / *Editar: lo que el backend ACEPTA. Los largos máximos coinciden con
-  las columnas de la BBDD, así un dato inválido se rechaza con un mensaje claro
-  antes de llegar a la base de datos.
-"""
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -138,4 +132,74 @@ class TableroEditar(BaseModel):
     nombre: str | None = Field(default=None, min_length=1, max_length=100)
     ubicacion: str | None = Field(default=None, max_length=200)
     amperaje_nominal: Decimal | None = Field(default=None, ge=0, max_digits=6, decimal_places=2)
+    activo: bool | None = None
+# ---------- Dispositivos (analizadores AcuRev) ----------
+
+class DispositivoOut(_Salida):
+    id: int
+    tablero_id: int
+    modelo: str
+    numero_serie: str | None
+    direccion_ip: str | None
+    fecha_instalacion: date | None
+    ultima_comunicacion: datetime | None   # última vez que el equipo envió datos
+    activo: bool
+    # OJO: token_ingesta (el hash de la clave) NO se incluye nunca.
+
+
+class DispositivoConClave(DispositivoOut):
+    """Respuesta especial al registrar el equipo o regenerar su clave.
+    La clave se muestra UNA sola vez: después no se puede recuperar, solo regenerar."""
+    clave_ingesta: str
+
+
+class DispositivoCrear(BaseModel):
+    tablero_id: int
+    modelo: str = Field(default="AcuRev-2110", min_length=1, max_length=50)
+    numero_serie: str | None = Field(default=None, max_length=50)
+    direccion_ip: str | None = Field(default=None, max_length=45)
+    fecha_instalacion: date | None = None
+
+
+class DispositivoEditar(BaseModel):
+    # tablero_id no se edita: si el equipo cambia de tablero, se desactiva y se registra de nuevo.
+    modelo: str | None = Field(default=None, min_length=1, max_length=50)
+    numero_serie: str | None = Field(default=None, max_length=50)
+    direccion_ip: str | None = Field(default=None, max_length=45)
+    fecha_instalacion: date | None = None
+    activo: bool | None = None
+
+
+# ---------- Circuitos ----------
+
+class CircuitoOut(_Salida):
+    id: int
+    tablero_id: int
+    dispositivo_id: int | None
+    codigo: str
+    nombre: str
+    canal_acurev: str | None          # cómo identifica el AcuRev a este circuito en su CSV
+    calibre_cable_mm2: float | None
+    corriente_automatico: float | None
+    activo: bool
+
+
+class CircuitoCrear(BaseModel):
+    tablero_id: int
+    dispositivo_id: int | None = None
+    codigo: str = Field(min_length=1, max_length=20)          # código del plano, ej. "C-01"
+    nombre: str = Field(min_length=1, max_length=100)
+    canal_acurev: str | None = Field(default=None, min_length=1, max_length=30)
+    calibre_cable_mm2: Decimal | None = Field(default=None, gt=0, max_digits=5, decimal_places=2)
+    corriente_automatico: Decimal | None = Field(default=None, gt=0, max_digits=6, decimal_places=2)
+
+
+class CircuitoEditar(BaseModel):
+    # tablero_id no se edita. El dispositivo y el canal sí (recableado en terreno).
+    dispositivo_id: int | None = None
+    codigo: str | None = Field(default=None, min_length=1, max_length=20)
+    nombre: str | None = Field(default=None, min_length=1, max_length=100)
+    canal_acurev: str | None = Field(default=None, min_length=1, max_length=30)
+    calibre_cable_mm2: Decimal | None = Field(default=None, gt=0, max_digits=5, decimal_places=2)
+    corriente_automatico: Decimal | None = Field(default=None, gt=0, max_digits=6, decimal_places=2)
     activo: bool | None = None

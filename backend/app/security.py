@@ -1,10 +1,5 @@
-"""Funciones de seguridad: contraseñas y tokens de sesión.
-
-- Las contraseñas NUNCA se guardan en texto: se guarda un hash Argon2
-  (algoritmo recomendado actualmente para contraseñas).
-- Al iniciar sesión se entrega un token JWT firmado con JWT_SECRET.
-  El token dice quién es el usuario y cuándo expira; no se puede falsificar sin la clave.
-"""
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -47,3 +42,17 @@ def leer_token(token: str) -> int | None:
         return int(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
         return None
+# ---------- Clave de ingesta de los equipos (AcuRev) ----------
+
+def generar_clave_ingesta() -> str:
+    """Crea una clave aleatoria para un equipo AcuRev.
+
+    Se muestra UNA sola vez al registrar el equipo (o al regenerarla).
+    El prefijo "em_" ayuda a reconocerla como clave de ElectroMap.
+    """
+    return "em_" + secrets.token_urlsafe(32)
+
+
+def hashear_clave_ingesta(clave: str) -> str:
+    """Hash SHA-256 de la clave: 64 caracteres. Es lo que se guarda en dispositivos.token_ingesta."""
+    return hashlib.sha256(clave.encode("utf-8")).hexdigest()
