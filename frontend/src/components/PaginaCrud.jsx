@@ -42,6 +42,9 @@ export default function PaginaCrud({
   titulo, descripcion, ruta, columnas, camposCrear = [], camposEditar = [],
   relaciones = {}, puedeCrear = () => false, puedeModificar = () => false,
   puedeDesactivar = () => true,
+  alCrear, // opcional: recibe el registro creado (ej. para mostrar la clave de un equipo)
+  accionesFila, // opcional: botones extra por fila → (fila, { recargar, setError, setMensaje })
+  children, // opcional: contenido extra que se muestra sobre la tabla
 }) {
   const { usuario } = useAuth()
   const [filas, setFilas] = useState([])
@@ -82,8 +85,9 @@ export default function PaginaCrud({
     setOcupado(true); setError(''); setMensaje('')
     try {
       if (formulario.modo === 'crear') {
-        await api(ruta, { metodo: 'POST', datos: aPayload(camposCrear, valores, usuario) })
+        const creado = await api(ruta, { metodo: 'POST', datos: aPayload(camposCrear, valores, usuario) })
         setMensaje('Registro creado correctamente.')
+        alCrear?.(creado)
       } else {
         const datos = aPayload(camposEditar, valores, usuario, formulario.fila)
         await api(`${ruta}/${formulario.fila.id}`, { metodo: 'PATCH', datos })
@@ -131,6 +135,8 @@ export default function PaginaCrud({
 
       <Aviso>{error}</Aviso>
       <Aviso tipo="exito">{mensaje}</Aviso>
+      
+      {children}
 
       {formulario && (
         <form onSubmit={guardar} className="space-y-4 rounded-lg bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -153,14 +159,15 @@ export default function PaginaCrud({
         </form>
       )}
 
-      <div className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
+      {/* overflow-x-auto: si hay muchas columnas, la tabla se desplaza en vez de cortarse */}
+      <div className="overflow-x-auto rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
         <table className="min-w-full divide-y divide-slate-200 text-sm">
           <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-3">ID</th>
               {columnas.map((c) => <th key={c.titulo} className="px-4 py-3">{c.titulo}</th>)}
               <th className="px-4 py-3">Estado</th>
-              {editable && <th className="px-4 py-3 text-right">Acciones</th>}
+              {editable && <th className="whitespace-nowrap px-4 py-3 text-right">Acciones</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -170,10 +177,15 @@ export default function PaginaCrud({
             {filas.map((fila) => (
               <tr key={fila.id} className={fila.activo ? '' : 'bg-slate-50 text-slate-400'}>
                 <td className="px-4 py-3 font-mono text-xs">{fila.id}</td>
-                {columnas.map((c) => <td key={c.titulo} className="px-4 py-3">{c.valor(fila, rel) ?? '—'}</td>)}
+                {columnas.map((c) => (
+                  <td key={c.titulo} className={`px-4 py-3 ${c.sinCorte ? 'whitespace-nowrap' : ''}`}>
+                    {c.valor(fila, rel) ?? '—'}
+                  </td>
+                ))}
                 <td className="px-4 py-3"><Insignia activo={fila.activo} /></td>
                 {editable && (
                   <td className="space-x-2 whitespace-nowrap px-4 py-3 text-right">
+                    {accionesFila?.(fila, { recargar, setError, setMensaje })}
                     {camposEditar.length > 0 && (
                       <Boton variante="secundario" onClick={() => abrir('editar', fila)}>Editar</Boton>
                     )}

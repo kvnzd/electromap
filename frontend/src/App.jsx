@@ -2,7 +2,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth.jsx'
 import Layout from './components/Layout.jsx'
-import { Clientes, Empresas, Sucursales, Tableros, Usuarios } from './pages/Administracion.jsx'
+import {
+  Circuitos, Clientes, Dispositivos, Empresas, Sucursales, Tableros, Usuarios,
+} from './pages/Administracion.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Login from './pages/Login.jsx'
 
@@ -23,6 +25,8 @@ export default function App() {
         <Route path="clientes" element={<Clientes />} />
         <Route path="sucursales" element={<Sucursales />} />
         <Route path="tableros" element={<Tableros />} />
+        <Route path="dispositivos" element={<Dispositivos />} />
+        <Route path="circuitos" element={<Circuitos />} />
         <Route path="usuarios" element={<Usuarios />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
