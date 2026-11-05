@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     # Tamaño máximo aceptado por envío (bytes). Protege el disco ante envíos abusivos.
     ingesta_max_bytes: int = 5_000_000
     
+    # Vigilante de equipos desconectados (Etapa 13).
+    # Cada cuántos segundos revisa y cuántos minutos sin datos cuentan como "desconectado".
+    vigilante_activo: bool = True
+    vigilante_intervalo_segundos: int = 60
+    offline_minutos: int = 5
+    
     @property
     def sqlalchemy_url(self) -> str:
         return a_url_sqlalchemy(self.database_url)
