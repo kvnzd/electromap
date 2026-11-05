@@ -180,13 +180,15 @@ class Alarma(Base):
 
 
 class UmbralConfigurado(Base):
-    """corriente/voltaje/potencia -> por circuito_id. temperatura -> por tablero_id."""
+    """corriente/voltaje/potencia -> por circuito_id. temperatura -> por tablero_id.
+    valor_umbral = máximo; valor_minimo = mínimo (solo voltaje)."""
     __tablename__ = "umbrales_configurados"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     tablero_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("tableros.id"))
     circuito_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("circuitos.id"))
     tipo_variable: Mapped[str] = mapped_column(String(30))
     valor_umbral: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    valor_minimo: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     activo: Mapped[bool] = db_default()
     creado_por: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("usuarios.id"))
     created_at: Mapped[datetime] = db_default()
