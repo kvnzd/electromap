@@ -203,3 +203,39 @@ class CircuitoEditar(BaseModel):
     calibre_cable_mm2: Decimal | None = Field(default=None, gt=0, max_digits=5, decimal_places=2)
     corriente_automatico: Decimal | None = Field(default=None, gt=0, max_digits=6, decimal_places=2)
     activo: bool | None = None
+
+    # ---------- Historial de mediciones (Etapa 18) ----------
+
+class PuntoHistorial(BaseModel):
+    """Promedio de las mediciones de un circuito dentro de un intervalo de tiempo."""
+    t: datetime  # inicio del intervalo (UTC)
+    voltaje_a: float | None = None
+    voltaje_b: float | None = None
+    voltaje_c: float | None = None
+    corriente_a: float | None = None
+    corriente_b: float | None = None
+    corriente_c: float | None = None
+    potencia_activa: float | None = None
+
+
+class ResumenCircuito(BaseModel):
+    corriente_max: float | None = None   # mayor corriente medida en cualquier fase
+    potencia_max: float | None = None
+    energia_kwh: float | None = None     # consumo del período (lectura final − inicial del contador)
+
+
+class CircuitoHistorial(BaseModel):
+    id: int
+    codigo: str
+    nombre: str
+    resumen: ResumenCircuito
+    puntos: list[PuntoHistorial]
+
+
+class HistorialOut(BaseModel):
+    tablero_id: int
+    desde: datetime
+    hasta: datetime
+    intervalo_segundos: int  # tamaño de cada punto del gráfico
+    hay_datos: bool
+    circuitos: list[CircuitoHistorial]
