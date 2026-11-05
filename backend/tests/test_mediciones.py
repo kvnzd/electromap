@@ -141,10 +141,16 @@ def test_simulador_carga_sin_duplicar_y_borra(db, escenario):
     assert simular(db, demo.id, dias=1, cada_minutos=10, ahora=ahora) == 2 * 144  # 2 circuitos × 144
     assert simular(db, demo.id, dias=1, cada_minutos=10, ahora=ahora) == 0        # repetir no duplica
 
+    # Una hora después: agrega solo lo nuevo (6 por circuito) y el contador de energía sigue subiendo.
+    assert simular(db, demo.id, dias=1, cada_minutos=10, ahora=ahora + timedelta(hours=1)) == 2 * 6
+    energias = db.scalars(select(Medicion.energia_kwh).join(Circuito).where(Circuito.codigo == "C1")
+                          .order_by(Medicion.medido_en)).all()
+    assert energias == sorted(energias)
+
     trifasico = db.scalar(select(Medicion).join(Circuito).where(Circuito.codigo == "C2-TRI").limit(1))
     assert trifasico.corriente_c is not None
     monofasico = db.scalar(select(Medicion).join(Circuito).where(Circuito.codigo == "C1").limit(1))
     assert monofasico.corriente_b is None
 
-    assert borrar(db, demo.id) == 288
+    assert borrar(db, demo.id) == 288 + 12
     assert db.scalar(select(func.count()).select_from(Medicion)) == 0

@@ -12,7 +12,8 @@ Reglas de seguridad:
   nunca se mezclen datos inventados con los de un tablero real.
 - Cada circuito del tablero necesita un equipo asignado (la tabla lo exige).
 - Un circuito cuyo código o nombre contiene "TRI" se simula trifásico; el resto, monofásico (fase A).
-- Se puede ejecutar varias veces: las mediciones que ya existen no se duplican.
+- Se puede ejecutar varias veces: si un circuito ya tiene mediciones, continúa desde la
+  última (sin duplicar y con el contador de energía siguiendo desde su valor).
 
 OJO: INSERTA (o borra) filas en la tabla mediciones de la base configurada en .env.
 No crea ni modifica tablas.
@@ -55,14 +56,16 @@ def _corriente(base: float, momento: datetime, azar: random.Random) -> float:
     return max(0.0, base * dia * azar.uniform(0.9, 1.1))
 
 
-def generar(circuitos: list[Circuito], desde: datetime, hasta: datetime, cada: timedelta):
-    """Genera las filas (diccionarios) de mediciones simuladas para cada circuito."""
+def generar(circuitos: list[Circuito], inicios: dict, hasta: datetime, cada: timedelta):
+    """Genera las filas (diccionarios) de mediciones simuladas para cada circuito.
+
+    inicios[circuito.id] = (momento inicial, lectura inicial del contador de energía en kWh).
+    """
     for circuito in circuitos:
         azar = random.Random(circuito.id)  # misma semilla → mismos datos al repetir
         base = float(circuito.corriente_automatico) * 0.45 if circuito.corriente_automatico else 8.0
         fases = ("a", "b", "c") if _es_trifasico(circuito) else ("a",)
-        energia = 0.0
-        momento = desde
+        momento, energia = inicios[circuito.id]
         while momento < hasta:
             # Todas las filas llevan las mismas columnas (las fases que no existen van vacías):
             # el insert por lotes usa las columnas de la primera fila para todo el lote.
@@ -94,8 +97,18 @@ def simular(db: Session, tablero_id: int, dias: float, cada_minutos: int = 1,
 
     hasta = (ahora or datetime.now(timezone.utc)).replace(second=0, microsecond=0)
     desde = hasta - timedelta(days=dias)
+    cada = timedelta(minutes=cada_minutos)
+
+    # Si el circuito ya tiene mediciones, se continúa desde la última: así el contador de
+    # energía sigue subiendo (si partiera de cero, el consumo del período saldría mal).
+    inicios = {}
+    for c in circuitos:
+        ultima = db.execute(select(Medicion.medido_en, Medicion.energia_kwh).where(Medicion.circuito_id == c.id)
+                            .order_by(Medicion.medido_en.desc()).limit(1)).first()
+        inicios[c.id] = (max(desde, ultima.medido_en + cada), float(ultima.energia_kwh or 0)) if ultima else (desde, 0.0)
+
     insertadas, lote = 0, []
-    for fila in generar(circuitos, desde, hasta, timedelta(minutes=cada_minutos)):
+    for fila in generar(circuitos, inicios, hasta, cada):
         lote.append(fila)
         if len(lote) == LOTE:
             insertadas += _insertar(db, lote)
