@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import SessionLocal
 from app.models import Alarma, Dispositivo
+from app.tiempo_real import canal, evento_alarma
 
 TIPO_OFFLINE = "dispositivo_offline"
 log = logging.getLogger("electromap.auditoria")
@@ -34,11 +35,16 @@ def _alarma_abierta(db: Session, dispositivo_id: int) -> Alarma | None:
     ))
 
 
-def revisar_equipos(db: Session, ahora: datetime | None = None) -> dict:
-    """Crea o resuelve alarmas de equipo desconectado. Devuelve cuántas creó y resolvió."""
+def revisar_equipos(db: Session, ahora: datetime | None = None, notificar=None) -> dict:
+    """Crea o resuelve alarmas de equipo desconectado. Devuelve cuántas creó y resolvió.
+
+    notificar(tablero_id, evento): opcional; se llama por cada alarma creada o resuelta
+    (el vigilante la usa para avisar en tiempo real a quienes miran ese tablero).
+    """
     ahora = ahora or datetime.now(timezone.utc)
     limite = ahora - timedelta(minutes=settings.offline_minutos)
     creadas = resueltas = 0
+    eventos = []  # (tablero_id, alarma, 'creada' | 'resuelta')
 
     equipos = db.scalars(select(Dispositivo).where(
         Dispositivo.activo.is_(True),
@@ -51,31 +57,37 @@ def revisar_equipos(db: Session, ahora: datetime | None = None) -> dict:
 
         if desconectado and abierta is None:
             minutos = int((ahora - equipo.ultima_comunicacion).total_seconds() // 60)
-            db.add(Alarma(
+            alarma = Alarma(
                 dispositivo_id=equipo.id,
                 tipo=TIPO_OFFLINE,
                 severidad="critica",
                 valor_medido=Decimal(min(minutos, 99_999_999)),  # minutos sin datos
                 valor_umbral=Decimal(settings.offline_minutos),
                 mensaje=f"Equipo sin enviar datos hace {minutos} min (límite {settings.offline_minutos} min)",
-            ))
+            )
+            db.add(alarma)
+            eventos.append((equipo.tablero_id, alarma, "creada"))
             creadas += 1
             log.warning("ALARMA %s: dispositivo %s sin datos hace %s min", TIPO_OFFLINE, equipo.id, minutos)
 
         elif not desconectado and abierta is not None:
             abierta.resuelto = True
             abierta.resuelto_en = ahora
+            eventos.append((equipo.tablero_id, abierta, "resuelta"))
             resueltas += 1
             log.info("ALARMA %s resuelta: dispositivo %s volvió a comunicarse", TIPO_OFFLINE, equipo.id)
 
     db.commit()
+    if notificar:
+        for tablero_id, alarma, accion in eventos:
+            notificar(tablero_id, evento_alarma(alarma, accion))
     return {"creadas": creadas, "resueltas": resueltas}
 
 
 def _una_revision() -> dict:
     """Abre su propia sesión de base de datos (no depende de ninguna petición HTTP)."""
     with SessionLocal() as db:
-        return revisar_equipos(db)
+        return revisar_equipos(db, notificar=canal.publicar_desde_hilo)
 
 
 async def vigilar() -> None:

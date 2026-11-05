@@ -23,6 +23,7 @@ from app.config import settings
 from app.db import get_db
 from app.models import Dispositivo
 from app.security import hashear_clave_ingesta
+from app.tiempo_real import canal
 
 router = APIRouter(prefix="/ingesta", tags=["ingesta (equipos AcuRev)"])
 
@@ -106,6 +107,11 @@ def recibir_envio(
         (carpeta / f"{archivo}_cabeceras.txt").write_text(cabeceras, encoding="utf-8")
 
     equipo.ultima_comunicacion = ahora
+    tablero_id = equipo.tablero_id
     db.commit()
+    # Aviso en tiempo real a quienes estén mirando el tablero de este equipo.
+    canal.publicar_desde_hilo(tablero_id, {
+        "tipo": "comunicacion", "dispositivo_id": equipo.id, "en": ahora.isoformat(), "bytes": len(cuerpo),
+    })
     return {"recibido": True, "dispositivo_id": equipo.id, "bytes": len(cuerpo), "archivo": archivo}
     

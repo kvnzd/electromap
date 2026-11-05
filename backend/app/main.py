@@ -11,7 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.logs import configurar_logs
-from app.routers import auth, circuitos, clientes, dispositivos, empresas, health, ingesta, sucursales, tableros, usuarios
+from app.routers import (
+    auth, circuitos, clientes, dispositivos, empresas, health, ingesta, sucursales, tableros, tiempo_real, usuarios,
+)
+from app.tiempo_real import canal
 from app.vigilante import vigilar
 
 configurar_logs()
@@ -19,7 +22,8 @@ configurar_logs()
 
 @asynccontextmanager
 async def ciclo_de_vida(app: FastAPI):
-    """Al arrancar el servidor inicia el vigilante de equipos; al apagarlo, lo detiene."""
+    """Al arrancar: prepara el canal en tiempo real e inicia el vigilante. Al apagar: lo detiene."""
+    canal.iniciar(asyncio.get_running_loop())
     tarea = asyncio.create_task(vigilar()) if settings.vigilante_activo else None
     yield
     if tarea:
@@ -53,6 +57,7 @@ app.include_router(tableros.router)
 app.include_router(dispositivos.router)
 app.include_router(circuitos.router)
 app.include_router(ingesta.router)
+app.include_router(tiempo_real.router)
 app.include_router(usuarios.router)
 
 
