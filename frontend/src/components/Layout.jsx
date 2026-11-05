@@ -14,6 +14,7 @@ function seccionesPara(rol) {
   s.push({ ruta: '/tableros', texto: 'Tableros' })
   s.push({ ruta: '/dispositivos', texto: 'Dispositivos' })
   s.push({ ruta: '/circuitos', texto: 'Circuitos' })
+  s.push({ ruta: '/historial', texto: 'Historial' })
   if (rol !== 'cliente') s.push({ ruta: '/usuarios', texto: 'Usuarios' })
   return s
 }
