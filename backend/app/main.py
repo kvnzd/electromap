@@ -15,6 +15,7 @@ from app.routers import (
     auth, circuitos, clientes, dispositivos, empresas, health, ingesta, mediciones, sucursales, tableros, tiempo_real,
     usuarios,
 )
+from app.simulador_vivo import simular_en_vivo
 from app.tiempo_real import canal
 from app.vigilante import vigilar
 
@@ -23,11 +24,15 @@ configurar_logs()
 
 @asynccontextmanager
 async def ciclo_de_vida(app: FastAPI):
-    """Al arrancar: prepara el canal en tiempo real e inicia el vigilante. Al apagar: lo detiene."""
+    """Al arrancar: prepara el canal en tiempo real e inicia las tareas de fondo. Al apagar: las detiene."""
     canal.iniciar(asyncio.get_running_loop())
-    tarea = asyncio.create_task(vigilar()) if settings.vigilante_activo else None
+    tareas = []
+    if settings.vigilante_activo:
+        tareas.append(asyncio.create_task(vigilar()))
+    if settings.simulador_vivo_tablero:
+        tareas.append(asyncio.create_task(simular_en_vivo()))
     yield
-    if tarea:
+    for tarea in tareas:
         tarea.cancel()
 
 

@@ -56,13 +56,14 @@ def _corriente(base: float, momento: datetime, azar: random.Random) -> float:
     return max(0.0, base * dia * azar.uniform(0.9, 1.1))
 
 
-def generar(circuitos: list[Circuito], inicios: dict, hasta: datetime, cada: timedelta):
+def generar(circuitos: list[Circuito], inicios: dict, hasta: datetime, cada: timedelta, semilla=None):
     """Genera las filas (diccionarios) de mediciones simuladas para cada circuito.
 
     inicios[circuito.id] = (momento inicial, lectura inicial del contador de energía en kWh).
+    semilla: opcional; el simulador en vivo pasa una distinta en cada envío para que varíe el ruido.
     """
     for circuito in circuitos:
-        azar = random.Random(circuito.id)  # misma semilla → mismos datos al repetir
+        azar = random.Random(f"{semilla}-{circuito.id}" if semilla is not None else circuito.id)  # misma semilla → mismos datos
         base = float(circuito.corriente_automatico) * 0.45 if circuito.corriente_automatico else 8.0
         fases = ("a", "b", "c") if _es_trifasico(circuito) else ("a",)
         momento, energia = inicios[circuito.id]

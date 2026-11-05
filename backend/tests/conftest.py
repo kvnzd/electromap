@@ -25,6 +25,7 @@ from app.security import crear_token, hashear_password
 
 # Las pruebas NUNCA arrancan el vigilante de equipos: usaría la base REAL (SessionLocal).
 settings.vigilante_activo = False
+settings.simulador_vivo_tablero = None  # ni el simulador en vivo
 
 SCHEMA_SQL = Path(__file__).resolve().parents[2] / "database" / "schema.sql"
 

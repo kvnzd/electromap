@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     vigilante_activo: bool = True
     vigilante_intervalo_segundos: int = 60
     offline_minutos: int = 5
+
+    # Simulador en vivo para el dashboard (Etapa 17). Vacío = apagado (lo normal).
+    # Para activarlo: SIMULADOR_VIVO_TABLERO=<id de un tablero DEMO> en el .env.
+    simulador_vivo_tablero: int | None = None
+    simulador_vivo_segundos: int = 5
     
     @property
     def sqlalchemy_url(self) -> str:
