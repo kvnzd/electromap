@@ -288,3 +288,28 @@ class EstadoTableroOut(BaseModel):
     equipos: list[EquipoEstado]
     circuitos: list[CircuitoEstado]
     alarmas_abiertas: list[AlarmaAbierta]
+
+
+# ---------- Umbrales de alarma por circuito (Etapa 14) ----------
+
+class UmbralOut(_Salida):
+    id: int
+    circuito_id: int | None
+    tipo_variable: str
+    valor_umbral: float          # máximo: corriente en A, voltaje en V, potencia en W
+    valor_minimo: float | None   # solo voltaje
+    activo: bool
+
+
+class UmbralCrear(BaseModel):
+    circuito_id: int
+    tipo_variable: Literal["corriente", "voltaje", "potencia"]
+    valor_umbral: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    valor_minimo: Decimal | None = Field(default=None, gt=0, max_digits=10, decimal_places=2)
+
+
+class UmbralEditar(BaseModel):
+    # circuito_id y tipo_variable no se editan: para otra variable se crea otro umbral.
+    valor_umbral: Decimal | None = Field(default=None, gt=0, max_digits=10, decimal_places=2)
+    valor_minimo: Decimal | None = Field(default=None, gt=0, max_digits=10, decimal_places=2)
+    activo: bool | None = None

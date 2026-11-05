@@ -13,7 +13,7 @@ from app.config import settings
 from app.logs import configurar_logs
 from app.routers import (
     auth, circuitos, clientes, dispositivos, empresas, health, ingesta, mediciones, sucursales, tableros, tiempo_real,
-    usuarios,
+    umbrales, usuarios,
 )
 from app.simulador_vivo import simular_en_vivo
 from app.tiempo_real import canal
@@ -65,6 +65,7 @@ app.include_router(circuitos.router)
 app.include_router(ingesta.router)
 app.include_router(mediciones.router)
 app.include_router(tiempo_real.router)
+app.include_router(umbrales.router)
 app.include_router(usuarios.router)
 
 

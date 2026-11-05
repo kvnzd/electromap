@@ -7,15 +7,22 @@ del AcuRev (Etapa 12), sin cambios.
 - Inserta las filas; las que ya existían (mismo circuito y momento) se omiten.
 - Después de guardar (commit), avisa cada medición NUEVA a quienes miran su tablero:
   {"tipo": "medicion", "circuito_id": ..., "medido_en": ..., "voltaje_a": ..., ...}
+- Las mediciones nuevas pasan por el motor de alarmas (Etapa 14), que crea o resuelve
+  alarmas por umbral; esas alarmas también se avisan (tipo "alarma").
 """
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.models import Circuito, Medicion
+from app.motor_alarmas import evaluar_mediciones
+from app.tiempo_real import evento_alarma
 
 CAMPOS = ("voltaje_a", "voltaje_b", "voltaje_c", "corriente_a", "corriente_b", "corriente_c",
           "potencia_activa", "energia_kwh", "temperatura_tablero")
+log = logging.getLogger("electromap.auditoria")
 
 
 def _numero(valor):
@@ -50,12 +57,25 @@ def registrar_mediciones(db: Session, filas: list[dict], notificar=None) -> int:
         .returning(Medicion.circuito_id, Medicion.medido_en)
     ).all()
     db.commit()
+    if not nuevas:
+        return 0
+    claves = {(n.circuito_id, n.medido_en) for n in nuevas}
+    filas_nuevas = [f for f in filas if (f["circuito_id"], f["medido_en"]) in claves]
 
-    if notificar and nuevas:
-        claves = {(n.circuito_id, n.medido_en) for n in nuevas}
-        ids = {c for c, _ in claves}
+    # Motor de alarmas: si falla, las mediciones ya quedaron guardadas igual.
+    try:
+        eventos = evaluar_mediciones(db, filas_nuevas)
+        db.commit()
+    except Exception:
+        db.rollback()
+        log.exception("Motor de alarmas: error al revisar mediciones")
+        eventos = []
+
+    if notificar:
+        ids = {f["circuito_id"] for f in filas_nuevas}
         tablero_de = dict(db.execute(select(Circuito.id, Circuito.tablero_id).where(Circuito.id.in_(ids))).all())
-        for fila in filas:
-            if (fila["circuito_id"], fila["medido_en"]) in claves:
-                notificar(tablero_de[fila["circuito_id"]], evento_medicion(fila))
+        for fila in filas_nuevas:
+            notificar(tablero_de[fila["circuito_id"]], evento_medicion(fila))
+        for tablero_id, alarma, accion in eventos:
+            notificar(tablero_id, evento_alarma(alarma, accion))
     return len(nuevas)

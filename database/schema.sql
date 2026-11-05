@@ -148,6 +148,7 @@ CREATE TABLE umbrales_configurados (
     circuito_id    BIGINT REFERENCES circuitos(id),
     tipo_variable  VARCHAR(30) NOT NULL,
     valor_umbral   NUMERIC(10,2) NOT NULL,
+    valor_minimo   NUMERIC(10,2),
     activo         BOOLEAN NOT NULL DEFAULT TRUE,
     creado_por     BIGINT REFERENCES usuarios(id),
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -156,6 +157,9 @@ CREATE TABLE umbrales_configurados (
     CONSTRAINT chk_scope_umbral CHECK (
         (tipo_variable = 'temperatura' AND tablero_id IS NOT NULL AND circuito_id IS NULL) OR
         (tipo_variable IN ('corriente','voltaje','potencia') AND circuito_id IS NOT NULL AND tablero_id IS NULL)
+    ),
+    CONSTRAINT chk_minimo_solo_voltaje CHECK (
+        valor_minimo IS NULL OR (tipo_variable = 'voltaje' AND valor_minimo < valor_umbral)
     )
 );
 CREATE UNIQUE INDEX uq_umbral_circuito_tipo ON umbrales_configurados (circuito_id, tipo_variable) WHERE circuito_id IS NOT NULL;
@@ -163,5 +167,4 @@ CREATE UNIQUE INDEX uq_umbral_tablero_tipo ON umbrales_configurados (tablero_id,
 
 -- Jerarquía multi-tenant: empresa -> cliente -> sucursal -> tablero -> dispositivo -> circuito -> mediciones/alarmas
 -- Pendientes conocidos (no reflejados en este script porque aún no se aplican):
---   1) umbrales_configurados.valor_umbral es un solo valor; voltaje necesita min y max.
---   2) Formato exacto del CSV/canal del AcuRev aún sin confirmar.
+--   1) Formato exacto del CSV/canal del AcuRev aún sin confirmar.
