@@ -12,7 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.logs import configurar_logs
 from app.routers import (
-    auth, circuitos, clientes, dispositivos, empresas, health, ingesta, sucursales, tableros, tiempo_real, usuarios,
+    auth, circuitos, clientes, dispositivos, empresas, health, ingesta, mediciones, sucursales, tableros, tiempo_real,
+    usuarios,
 )
 from app.tiempo_real import canal
 from app.vigilante import vigilar
@@ -57,6 +58,7 @@ app.include_router(tableros.router)
 app.include_router(dispositivos.router)
 app.include_router(circuitos.router)
 app.include_router(ingesta.router)
+app.include_router(mediciones.router)
 app.include_router(tiempo_real.router)
 app.include_router(usuarios.router)
 
