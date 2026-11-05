@@ -3,20 +3,35 @@
 Levantar (desde la carpeta backend/, con el entorno virtual activado):
     uvicorn app.main:app --reload
 """
+import asyncio
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.logs import configurar_logs
 from app.routers import auth, circuitos, clientes, dispositivos, empresas, health, ingesta, sucursales, tableros, usuarios
+from app.vigilante import vigilar
 
 configurar_logs()
+
+
+@asynccontextmanager
+async def ciclo_de_vida(app: FastAPI):
+    """Al arrancar el servidor inicia el vigilante de equipos; al apagarlo, lo detiene."""
+    tarea = asyncio.create_task(vigilar()) if settings.vigilante_activo else None
+    yield
+    if tarea:
+        tarea.cancel()
+
 
 # Crea la aplicación. title y version aparecen en la documentación automática (/docs).
 app = FastAPI(
     title="ElectroMap API",
     description="Backend del sistema de monitoreo de tableros eléctricos.",
     version="0.4.0",
+    lifespan=ciclo_de_vida,
 )
 
 # CORS: permite que el frontend (otra dirección/puerto) llame a la API desde el navegador.
