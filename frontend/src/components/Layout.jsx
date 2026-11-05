@@ -6,7 +6,7 @@ const NOMBRE_ROL = { vsc: 'Administrador VSC', empresa: 'Empresa', cliente: 'Cli
 
 // Qué secciones ve cada rol en el menú.
 function seccionesPara(rol) {
-  const s = [{ ruta: '/', texto: 'Inicio' }]
+  const s = [{ ruta: '/', texto: 'Inicio' }, { ruta: '/en-vivo', texto: 'En vivo' }]
   if (rol === 'vsc') s.push({ ruta: '/empresas', texto: 'Empresas' })
   if (rol === 'empresa') s.push({ ruta: '/empresas', texto: 'Mi empresa' })
   if (rol !== 'cliente') s.push({ ruta: '/clientes', texto: 'Clientes' })

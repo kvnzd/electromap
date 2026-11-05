@@ -5,6 +5,7 @@ import Layout from './components/Layout.jsx'
 import {
   Circuitos, Clientes, Dispositivos, Empresas, Sucursales, Tableros, Usuarios,
 } from './pages/Administracion.jsx'
+import EnVivo from './pages/EnVivo.jsx'
 import Historial from './pages/Historial.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Login from './pages/Login.jsx'
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="tableros" element={<Tableros />} />
         <Route path="dispositivos" element={<Dispositivos />} />
         <Route path="circuitos" element={<Circuitos />} />
+        <Route path="en-vivo" element={<EnVivo />} />
         <Route path="historial" element={<Historial />} />
         <Route path="usuarios" element={<Usuarios />} />
       </Route>

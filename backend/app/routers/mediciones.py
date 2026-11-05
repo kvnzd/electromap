@@ -1,6 +1,7 @@
-"""Historial de mediciones de un tablero (Etapa 18 — Historia 006).
+"""Mediciones de un tablero: historial (Etapa 18) y estado actual para el dashboard (Etapa 17).
 
 GET /mediciones/historial?tablero_id=4&desde=...&hasta=...
+GET /mediciones/estado-actual?tablero_id=4   (última medición de cada circuito + equipos + alarmas abiertas)
 
 - Solo tableros del ámbito del usuario (404 si no existe, 403 si es ajeno).
 - Rango máximo: 31 días (400 si es mayor o si 'hasta' no es posterior a 'desde').
@@ -12,13 +13,17 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session
 
-from app.autorizacion import circuitos_visibles, obtener_en_scope, tableros_visibles
+from app.autorizacion import circuitos_visibles, dispositivos_visibles, obtener_en_scope, tableros_visibles
 from app.db import get_db
 from app.deps import get_usuario_actual
-from app.models import Circuito, Medicion, Tablero, Usuario
-from app.schemas import CircuitoHistorial, HistorialOut, PuntoHistorial, ResumenCircuito
+from app.models import Alarma, Circuito, Dispositivo, Medicion, Tablero, Usuario
+from app.schemas import (
+    AlarmaAbierta, CircuitoEstado, CircuitoHistorial, EquipoEstado, EstadoTableroOut, HistorialOut, PuntoHistorial,
+    ResumenCircuito, UltimaMedicion,
+)
 
 router = APIRouter(prefix="/mediciones", tags=["mediciones"])
 
@@ -116,4 +121,56 @@ def historial(
             )
             for c in circuitos
         ],
+    )
+
+
+@router.get("/estado-actual", response_model=EstadoTableroOut)
+def estado_actual(
+    tablero_id: int,
+    usuario: Usuario = Depends(get_usuario_actual),
+    db: Session = Depends(get_db),
+):
+    """Foto inicial del dashboard: última medición de cada circuito, equipos y alarmas abiertas.
+
+    Después, el dashboard se mantiene al día con el WebSocket /ws/tableros/{id}.
+    """
+    tablero = obtener_en_scope(db, usuario, Tablero, tablero_id, tableros_visibles(usuario, True), "tablero")
+    circuitos = db.scalars(
+        circuitos_visibles(usuario).where(Circuito.tablero_id == tablero_id).order_by(Circuito.codigo)
+    ).all()
+    equipos = db.scalars(
+        dispositivos_visibles(usuario).where(Dispositivo.tablero_id == tablero_id).order_by(Dispositivo.id)
+    ).all()
+
+    # Última medición de cada circuito: DISTINCT ON de PostgreSQL (una fila por circuito, la más reciente).
+    ids = [c.id for c in circuitos]
+    ultimas = {
+        m.circuito_id: m for m in db.scalars(
+            select(Medicion).where(Medicion.circuito_id.in_(ids))
+            .order_by(Medicion.circuito_id, Medicion.medido_en.desc())
+            .ext(distinct_on(Medicion.circuito_id))
+        ).all()
+    } if ids else {}
+
+    alarmas = db.scalars(
+        select(Alarma).where(Alarma.dispositivo_id.in_([e.id for e in equipos]), Alarma.resuelto.is_(False))
+        .order_by(Alarma.generado_en.desc())
+    ).all() if equipos else []
+
+    def _ultima(m):
+        if m is None:
+            return None
+        return UltimaMedicion(medido_en=m.medido_en, **{
+            c: _numero(getattr(m, c)) for c in (*_CAMPOS, "energia_kwh")})
+
+    return EstadoTableroOut(
+        tablero_id=tablero.id, codigo=tablero.codigo, nombre=tablero.nombre,
+        equipos=[EquipoEstado(id=e.id, modelo=e.modelo, numero_serie=e.numero_serie,
+                              ultima_comunicacion=e.ultima_comunicacion) for e in equipos],
+        circuitos=[CircuitoEstado(id=c.id, codigo=c.codigo, nombre=c.nombre, dispositivo_id=c.dispositivo_id,
+                                  corriente_automatico=_numero(c.corriente_automatico), ultima=_ultima(ultimas.get(c.id)))
+                   for c in circuitos],
+        alarmas_abiertas=[AlarmaAbierta(id=a.id, tipo=a.tipo, severidad=a.severidad, dispositivo_id=a.dispositivo_id,
+                                        circuito_id=a.circuito_id, mensaje=a.mensaje, generado_en=a.generado_en)
+                          for a in alarmas],
     )

@@ -239,3 +239,52 @@ class HistorialOut(BaseModel):
     intervalo_segundos: int  # tamaño de cada punto del gráfico
     hay_datos: bool
     circuitos: list[CircuitoHistorial]
+
+
+# ---------- Estado actual de un tablero: dashboard (Etapa 17) ----------
+
+class UltimaMedicion(BaseModel):
+    medido_en: datetime
+    voltaje_a: float | None = None
+    voltaje_b: float | None = None
+    voltaje_c: float | None = None
+    corriente_a: float | None = None
+    corriente_b: float | None = None
+    corriente_c: float | None = None
+    potencia_activa: float | None = None
+    energia_kwh: float | None = None
+
+
+class CircuitoEstado(BaseModel):
+    id: int
+    codigo: str
+    nombre: str
+    dispositivo_id: int | None
+    corriente_automatico: float | None
+    ultima: UltimaMedicion | None  # None = el circuito aún no tiene mediciones
+
+
+class EquipoEstado(BaseModel):
+    id: int
+    modelo: str
+    numero_serie: str | None
+    ultima_comunicacion: datetime | None
+
+
+class AlarmaAbierta(BaseModel):
+    id: int
+    tipo: str
+    severidad: str
+    dispositivo_id: int
+    circuito_id: int | None
+    mensaje: str | None
+    generado_en: datetime
+
+
+class EstadoTableroOut(BaseModel):
+    tablero_id: int
+    codigo: str
+    nombre: str
+    equipos: list[EquipoEstado]
+    circuitos: list[CircuitoEstado]
+    alarmas_abiertas: list[AlarmaAbierta]
