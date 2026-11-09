@@ -49,6 +49,24 @@ function Tendencia({ valores }) {
   )
 }
 
+// Temperatura ESTIMADA del cable (Etapa 19a): la calcula el backend con la corriente y la
+// ampacidad del calibre (no es una medición). Ámbar desde el 80 % de la máxima de la aislación.
+function TemperaturaCable({ circuito, medicion, tMax }) {
+  if (!circuito.ampacidad_cable) {
+    return <p className="text-xs text-slate-400">Sin calibre de cable: asígnalo en Circuitos para estimar su temperatura.</p>
+  }
+  const t = medicion?.temperatura_conductor
+  if (t == null) return null
+  const alta = t >= 0.8 * tMax
+  const color = t >= tMax ? 'text-red-700' : alta ? 'text-amber-700' : 'text-slate-900'
+  return (
+    <p className="flex justify-between text-sm" title={`Estimada: ambiente + (máx. aislación ${numero(tMax, 0)} °C − ambiente) · (I / ${numero(circuito.ampacidad_cable, 0)} A)²`}>
+      <span className="text-slate-500">Temp. cable (estimada) · {numero(circuito.calibre_cable_mm2)} mm²</span>
+      <strong className={`tabular-nums ${color}`}>{numero(t)} °C{alta && ' ⚠'}</strong>
+    </p>
+  )
+}
+
 // Carga respecto del automático: barra + porcentaje (ámbar desde 80 %, rojo desde 100 %).
 function Carga({ corriente, automatico }) {
   if (corriente == null || !automatico) return null
@@ -67,7 +85,7 @@ function Carga({ corriente, automatico }) {
   )
 }
 
-function TarjetaCircuito({ circuito, tendencia, ahora, alarma }) {
+function TarjetaCircuito({ circuito, tendencia, ahora, alarma, tMax }) {
   const m = circuito.ultima
   const edad = m ? ahora - new Date(m.medido_en).getTime() : null
   const antiguo = edad == null || edad > ANTIGUO_MS
@@ -109,6 +127,7 @@ function TarjetaCircuito({ circuito, tendencia, ahora, alarma }) {
           <span className="text-slate-500">Energía <strong className="tabular-nums text-slate-900">{numero(m.energia_kwh, 1)} kWh</strong></span>
         </p>
       )}
+      <TemperaturaCable circuito={circuito} medicion={m} tMax={tMax} />
     </article>
   )
 }
@@ -201,7 +220,7 @@ function PanelTablero({ tableroId }) {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {estadoTablero.circuitos.map((c) => (
               <TarjetaCircuito key={c.id} circuito={c} tendencia={tendencias[c.id] ?? []} ahora={ahora}
-                alarma={alarmaDe(estadoTablero.alarmas_abiertas, c.id)} />
+                alarma={alarmaDe(estadoTablero.alarmas_abiertas, c.id)} tMax={estadoTablero.temperatura_max_aislacion} />
             ))}
           </div>
         )}
