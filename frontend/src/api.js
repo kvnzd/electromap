@@ -16,12 +16,26 @@ export class ErrorApi extends Error {
   }
 }
 
+// Nombre legible de los campos técnicos que pueden aparecer en un error de validación.
+const NOMBRES_CAMPOS = {
+  canal_acurev: 'Canal del AcuRev',
+  calibre_cable_mm2: 'Calibre del cable',
+  corriente_automatico: 'Corriente del automático',
+  numero_serie: 'N.º de serie',
+  nombre_usuario: 'Nombre de usuario',
+  valor_umbral: 'Máximo',
+  valor_minimo: 'Mínimo',
+}
+
 function mensajeDeError(cuerpo) {
   const detalle = cuerpo?.detail
   if (typeof detalle === 'string') return detalle
   // Errores de validación (422): lista de campos con problemas.
   if (Array.isArray(detalle)) {
-    return detalle.map((d) => `${d.loc?.at(-1) ?? 'dato'}: ${d.msg}`).join(' · ')
+    return detalle.map((d) => {
+      const campo = d.loc?.at(-1) ?? 'dato'
+      return `${NOMBRES_CAMPOS[campo] ?? campo}: ${d.msg}`
+    }).join(' · ')
   }
   return 'Error inesperado'
 }

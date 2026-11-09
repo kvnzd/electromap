@@ -32,13 +32,13 @@ def crear_token(usuario_id: int) -> str:
         "iat": ahora,
         "exp": ahora + timedelta(minutes=settings.jwt_expira_minutos),
     }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algoritmo)
+    return jwt.encode(payload, settings.jwt_secret.get_secret_value(), algorithm=settings.jwt_algoritmo)
 
 
 def leer_token(token: str) -> int | None:
     """Devuelve el id del usuario si el token es válido y no expiró; si no, None."""
     try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algoritmo])
+        payload = jwt.decode(token, settings.jwt_secret.get_secret_value(), algorithms=[settings.jwt_algoritmo])
         return int(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
         return None

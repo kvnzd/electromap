@@ -46,7 +46,7 @@ def test_token_firmado_con_otra_clave_se_rechaza():
 def test_token_expirado_se_rechaza():
     vencido = jwt.encode(
         {"sub": "42", "exp": datetime.now(timezone.utc) - timedelta(minutes=1)},
-        settings.jwt_secret,
+        settings.jwt_secret.get_secret_value(),
         algorithm=settings.jwt_algoritmo,
     )
     assert leer_token(vencido) is None

@@ -9,9 +9,15 @@ Usan SOLO la base de pruebas (TEST_DATABASE_URL), nunca la real:
 Protección: si TEST_DATABASE_URL apunta a la misma base que DATABASE_URL,
 las pruebas se detienen sin tocar nada.
 """
+import os
+import tempfile
 from pathlib import Path
 
-import pytest
+# Los registros de las pruebas van a una carpeta temporal, NO a logs/ del sistema real.
+# (Debe ir antes de importar la app, que configura los registros al cargarse.)
+os.environ["LOGS_CARPETA"] = tempfile.mkdtemp(prefix="electromap-logs-pruebas-")
+
+import pytest  # noqa: E402
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
@@ -39,10 +45,11 @@ def _misma_base(url_a: str, url_b: str) -> bool:
 def engine_pruebas():
     if not settings.test_database_url:
         pytest.skip("TEST_DATABASE_URL no está configurada en .env")
-    if _misma_base(settings.test_database_url, settings.database_url):
+    url_pruebas = settings.test_database_url.get_secret_value()
+    if _misma_base(url_pruebas, settings.database_url.get_secret_value()):
         pytest.exit("PELIGRO: TEST_DATABASE_URL apunta a la base REAL. Pruebas canceladas.", 2)
 
-    engine = create_engine(a_url_sqlalchemy(settings.test_database_url))
+    engine = create_engine(a_url_sqlalchemy(url_pruebas))
     with engine.begin() as conn:
         conn.exec_driver_sql("DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;")
         conn.exec_driver_sql(SCHEMA_SQL.read_text(encoding="utf-8"))

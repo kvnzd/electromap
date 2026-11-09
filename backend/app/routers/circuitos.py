@@ -45,7 +45,7 @@ def _validar_conexion(
         if equipo.tablero_id != tablero_id:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "El equipo no está instalado en el tablero de este circuito")
     if canal_acurev is not None and dispositivo_id is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Para indicar canal_acurev, el circuito debe tener un equipo asignado")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Para indicar el canal del AcuRev, el circuito debe tener un equipo asignado")
     if calibre is not None and db.get(CalibreCable, calibre) is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"El calibre {calibre} mm² no está registrado en la tabla de calibres")
 
