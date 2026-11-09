@@ -3,24 +3,27 @@
 Así las contraseñas y claves nunca quedan escritas en el código.
 """
 from pathlib import Path
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # Los secretos son SecretStr: si aparecen en un error o en un log se ven como '**********'.
+    # Para usar el valor real: settings.database_url.get_secret_value().
+
     # Dirección de conexión a PostgreSQL (Railway). Obligatoria.
-    database_url: str
+    database_url: SecretStr
 
     # Clave para firmar los tokens de sesión. Obligatoria y de al menos 32 caracteres.
-    jwt_secret: str = Field(min_length=32)
+    jwt_secret: SecretStr = Field(min_length=32)
     jwt_algoritmo: str = "HS256"
     jwt_expira_minutos: int = 480
 
     # Base de datos SOLO para pruebas automáticas (pytest). Debe ser distinta de la real.
     # Si no está configurada, las pruebas que necesitan base de datos se omiten.
-    test_database_url: str | None = None
+    test_database_url: SecretStr | None = None
 
     # Direcciones web (frontend) autorizadas para llamar a esta API desde el navegador (CORS).
     cors_origenes: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
@@ -29,6 +32,8 @@ class Settings(BaseSettings):
     ingesta_carpeta: Path = Path(__file__).resolve().parent.parent / "ingesta_recibida"
     # Tamaño máximo aceptado por envío (bytes). Protege el disco ante envíos abusivos.
     ingesta_max_bytes: int = 5_000_000
+    # Carpeta de los registros (seguridad.log y auditoria.log). Las pruebas usan otra (temporal).
+    logs_carpeta: Path = Path(__file__).resolve().parent.parent / "logs"
     
     # Vigilante de equipos desconectados (Etapa 13).
     # Cada cuántos segundos revisa y cuántos minutos sin datos cuentan como "desconectado".
@@ -43,7 +48,7 @@ class Settings(BaseSettings):
     
     @property
     def sqlalchemy_url(self) -> str:
-        return a_url_sqlalchemy(self.database_url)
+        return a_url_sqlalchemy(self.database_url.get_secret_value())
 
 
 def a_url_sqlalchemy(url: str) -> str:
