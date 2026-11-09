@@ -1,6 +1,7 @@
 // Dashboard en tiempo real (Etapa 17 — Historia 004): valores actuales de cada circuito
 // de un tablero, que se actualizan solos por WebSocket, con alarmas abiertas y aviso de datos antiguos.
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api.js'
 import { Aviso } from '../components/ui.jsx'
 import useTableroEnVivo from '../hooks/useTableroEnVivo.js'
@@ -9,6 +10,11 @@ const ANTIGUO_MS = 5 * 60 * 1000   // igual que el vigilante: 5 min sin datos = 
 const PUNTOS_TENDENCIA = 60        // muestras que guarda la mini-curva de cada circuito
 const ahoraMs = () => Date.now()
 const SEVERIDAD = { leve: 'leve', moderada: 'moderada', critica: 'crítica' }
+// La alarma abierta más grave de un circuito (crítica primero), o undefined si no tiene.
+const alarmaDe = (alarmas, circuitoId) => {
+  const delCircuito = alarmas.filter((a) => a.circuito_id === circuitoId)
+  return delCircuito.find((a) => a.severidad === 'critica') ?? delCircuito[0]
+}
 
 const fases = (m, campo) => ['a', 'b', 'c'].map((f) => m?.[`${campo}_${f}`]).filter((v) => v != null)
 const corrienteMayor = (m) => (fases(m, 'corriente').length ? Math.max(...fases(m, 'corriente')) : null)
@@ -61,19 +67,24 @@ function Carga({ corriente, automatico }) {
   )
 }
 
-function TarjetaCircuito({ circuito, tendencia, ahora }) {
+function TarjetaCircuito({ circuito, tendencia, ahora, alarma }) {
   const m = circuito.ultima
   const edad = m ? ahora - new Date(m.medido_en).getTime() : null
   const antiguo = edad == null || edad > ANTIGUO_MS
   const trifasico = fases(m, 'corriente').length > 1
   return (
-    <article className="space-y-3 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <article className={`space-y-3 rounded-lg bg-white p-4 shadow-sm ${!alarma ? 'ring-1 ring-slate-200' : alarma.severidad === 'critica' ? 'ring-2 ring-red-500' : 'ring-2 ring-amber-500'}`}>
       <header className="flex items-baseline justify-between gap-2">
         <h2 className="font-semibold text-slate-900">{circuito.codigo} <span className="font-normal text-slate-500">{circuito.nombre}</span></h2>
         <span className={`text-xs ${antiguo ? 'font-medium text-amber-700' : 'text-slate-500'}`}>
           {antiguo && m ? '⚠ ' : ''}{m ? hace(edad) : 'sin datos'}
         </span>
       </header>
+      {alarma && (
+        <p className={`text-xs font-medium ${alarma.severidad === 'critica' ? 'text-red-700' : 'text-amber-700'}`}>
+          ⚠ Alarma {SEVERIDAD[alarma.severidad] ?? alarma.severidad} abierta
+        </p>
+      )}
       <p>
         <span className="text-3xl font-bold tabular-nums text-slate-900">{numero(corrienteMayor(m))}</span>
         <span className="ml-1 text-sm text-slate-500">A{trifasico && ' (fase más cargada)'}</span>
@@ -145,7 +156,7 @@ function PanelTablero({ tableroId }) {
       setEstadoTablero((e) => e && {
         ...e,
         alarmas_abiertas: evento.accion === 'creada'
-          ? [{ id: evento.alarma_id, tipo: evento.alarma_tipo, severidad: evento.severidad, mensaje: evento.mensaje, dispositivo_id: evento.dispositivo_id }, ...e.alarmas_abiertas]
+          ? [{ id: evento.alarma_id, tipo: evento.alarma_tipo, severidad: evento.severidad, mensaje: evento.mensaje, dispositivo_id: evento.dispositivo_id, circuito_id: evento.circuito_id }, ...e.alarmas_abiertas]
           : e.alarmas_abiertas.filter((a) => a.id !== evento.alarma_id),
       })
     }
@@ -180,6 +191,7 @@ function PanelTablero({ tableroId }) {
           {estadoTablero.alarmas_abiertas.map((a) => (
             <li key={a.id}>⚠ <strong>Alarma {SEVERIDAD[a.severidad] ?? a.severidad}:</strong> {a.mensaje ?? a.tipo}</li>
           ))}
+          <li className="pt-1 text-xs"><Link to="/alarmas" className="underline">Ver todas las alarmas</Link></li>
         </ul>
       )}
 
@@ -188,7 +200,8 @@ function PanelTablero({ tableroId }) {
         : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {estadoTablero.circuitos.map((c) => (
-              <TarjetaCircuito key={c.id} circuito={c} tendencia={tendencias[c.id] ?? []} ahora={ahora} />
+              <TarjetaCircuito key={c.id} circuito={c} tendencia={tendencias[c.id] ?? []} ahora={ahora}
+                alarma={alarmaDe(estadoTablero.alarmas_abiertas, c.id)} />
             ))}
           </div>
         )}
