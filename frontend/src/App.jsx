@@ -5,10 +5,12 @@ import Layout from './components/Layout.jsx'
 import {
   Circuitos, Clientes, Dispositivos, Empresas, Sucursales, Tableros, Usuarios,
 } from './pages/Administracion.jsx'
+import Alarmas from './pages/Alarmas.jsx'
 import EnVivo from './pages/EnVivo.jsx'
 import Historial from './pages/Historial.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Login from './pages/Login.jsx'
+import Umbrales from './pages/Umbrales.jsx'
 
 function RequiereSesion({ children }) {
   const { usuario, cargando } = useAuth()
@@ -30,6 +32,8 @@ export default function App() {
         <Route path="dispositivos" element={<Dispositivos />} />
         <Route path="circuitos" element={<Circuitos />} />
         <Route path="en-vivo" element={<EnVivo />} />
+        <Route path="alarmas" element={<Alarmas />} />
+        <Route path="umbrales" element={<Umbrales />} />
         <Route path="historial" element={<Historial />} />
         <Route path="usuarios" element={<Usuarios />} />
       </Route>

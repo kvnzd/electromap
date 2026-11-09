@@ -313,3 +313,21 @@ class UmbralEditar(BaseModel):
     valor_umbral: Decimal | None = Field(default=None, gt=0, max_digits=10, decimal_places=2)
     valor_minimo: Decimal | None = Field(default=None, gt=0, max_digits=10, decimal_places=2)
     activo: bool | None = None
+
+
+# ---------- Alarmas de un tablero (Etapa 15) ----------
+
+class AlarmaOut(_Salida):
+    id: int
+    dispositivo_id: int
+    circuito_id: int | None
+    tipo: str
+    severidad: str
+    valor_medido: float | None
+    valor_umbral: float | None
+    mensaje: str | None
+    generado_en: datetime
+    resuelto: bool
+    resuelto_en: datetime | None
+    resuelto_por: int | None
+    resuelto_por_nombre: str | None = None   # None + resuelto = la cerró el sistema
