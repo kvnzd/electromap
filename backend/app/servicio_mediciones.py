@@ -9,6 +9,7 @@ del AcuRev (Etapa 12), sin cambios.
   {"tipo": "medicion", "circuito_id": ..., "medido_en": ..., "voltaje_a": ..., ...}
 - Las mediciones nuevas pasan por el motor de alarmas (Etapa 14), que crea o resuelve
   alarmas por umbral; esas alarmas también se avisan (tipo "alarma").
+- El aviso incluye la temperatura ESTIMADA del cable (Etapa 19a), si el circuito tiene calibre.
 """
 import logging
 
@@ -18,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Circuito, Medicion
 from app.motor_alarmas import evaluar_mediciones
+from app.temperatura import ampacidades, corriente_mayor, estimar_temperatura
 from app.tiempo_real import evento_alarma
 
 CAMPOS = ("voltaje_a", "voltaje_b", "voltaje_c", "corriente_a", "corriente_b", "corriente_c",
@@ -29,7 +31,7 @@ def _numero(valor):
     return None if valor is None else round(float(valor), 3)
 
 
-def evento_medicion(fila) -> dict:
+def evento_medicion(fila, ampacidad: float | None = None) -> dict:
     """Mensaje que recibe el navegador por cada medición (fila: objeto o diccionario)."""
     leer = (lambda c: fila.get(c)) if isinstance(fila, dict) else (lambda c: getattr(fila, c))
     return {
@@ -38,6 +40,7 @@ def evento_medicion(fila) -> dict:
         "dispositivo_id": leer("dispositivo_id"),
         "medido_en": leer("medido_en").isoformat(),
         **{c: _numero(leer(c)) for c in CAMPOS},
+        "temperatura_conductor": estimar_temperatura(corriente_mayor(fila), ampacidad),
     }
 
 
@@ -74,8 +77,10 @@ def registrar_mediciones(db: Session, filas: list[dict], notificar=None) -> int:
     if notificar:
         ids = {f["circuito_id"] for f in filas_nuevas}
         tablero_de = dict(db.execute(select(Circuito.id, Circuito.tablero_id).where(Circuito.id.in_(ids))).all())
+        ampacidad_de = ampacidades(db, ids)
         for fila in filas_nuevas:
-            notificar(tablero_de[fila["circuito_id"]], evento_medicion(fila))
+            cid = fila["circuito_id"]
+            notificar(tablero_de[cid], evento_medicion(fila, ampacidad_de.get(cid)))
         for tablero_id, alarma, accion in eventos:
             notificar(tablero_id, evento_alarma(alarma, accion))
     return len(nuevas)

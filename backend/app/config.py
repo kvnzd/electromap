@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     # Para activarlo: SIMULADOR_VIVO_TABLERO=<id de un tablero DEMO> en el .env.
     simulador_vivo_tablero: int | None = None
     simulador_vivo_segundos: int = 5
+
+    # Temperatura estimada del conductor (Etapa 19a), en °C.
+    # Máxima de la aislación: 70 °C para PVC (NYA/THW); 90 °C para THHN o XLPE.
+    temperatura_ambiente: float = 30.0
+    temperatura_max_aislacion: float = 70.0
     
     @property
     def sqlalchemy_url(self) -> str:

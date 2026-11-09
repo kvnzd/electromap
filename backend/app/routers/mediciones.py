@@ -17,6 +17,7 @@ from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.orm import Session
 
 from app.autorizacion import circuitos_visibles, dispositivos_visibles, obtener_en_scope, tableros_visibles
+from app.config import settings
 from app.db import get_db
 from app.deps import get_usuario_actual
 from app.models import Alarma, Circuito, Dispositivo, Medicion, Tablero, Usuario
@@ -24,6 +25,7 @@ from app.schemas import (
     AlarmaAbierta, CircuitoEstado, CircuitoHistorial, EquipoEstado, EstadoTableroOut, HistorialOut, PuntoHistorial,
     ResumenCircuito, UltimaMedicion,
 )
+from app.temperatura import ampacidades, corriente_mayor, estimar_temperatura
 
 router = APIRouter(prefix="/mediciones", tags=["mediciones"])
 
@@ -157,20 +159,27 @@ def estado_actual(
         .order_by(Alarma.generado_en.desc())
     ).all() if equipos else []
 
+    ampacidad_de = ampacidades(db, ids)
+
     def _ultima(m):
         if m is None:
             return None
         return UltimaMedicion(medido_en=m.medido_en, **{
-            c: _numero(getattr(m, c)) for c in (*_CAMPOS, "energia_kwh")})
+            c: _numero(getattr(m, c)) for c in (*_CAMPOS, "energia_kwh")},
+            temperatura_conductor=estimar_temperatura(corriente_mayor(m), ampacidad_de.get(m.circuito_id)))
 
     return EstadoTableroOut(
         tablero_id=tablero.id, codigo=tablero.codigo, nombre=tablero.nombre,
         equipos=[EquipoEstado(id=e.id, modelo=e.modelo, numero_serie=e.numero_serie,
                               ultima_comunicacion=e.ultima_comunicacion) for e in equipos],
         circuitos=[CircuitoEstado(id=c.id, codigo=c.codigo, nombre=c.nombre, dispositivo_id=c.dispositivo_id,
-                                  corriente_automatico=_numero(c.corriente_automatico), ultima=_ultima(ultimas.get(c.id)))
+                                  corriente_automatico=_numero(c.corriente_automatico),
+                                  calibre_cable_mm2=_numero(c.calibre_cable_mm2), ampacidad_cable=ampacidad_de.get(c.id),
+                                  ultima=_ultima(ultimas.get(c.id)))
                    for c in circuitos],
         alarmas_abiertas=[AlarmaAbierta(id=a.id, tipo=a.tipo, severidad=a.severidad, dispositivo_id=a.dispositivo_id,
                                         circuito_id=a.circuito_id, mensaje=a.mensaje, generado_en=a.generado_en)
                           for a in alarmas],
+        temperatura_ambiente=settings.temperatura_ambiente,
+        temperatura_max_aislacion=settings.temperatura_max_aislacion,
     )

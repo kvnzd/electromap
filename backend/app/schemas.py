@@ -253,6 +253,7 @@ class UltimaMedicion(BaseModel):
     corriente_c: float | None = None
     potencia_activa: float | None = None
     energia_kwh: float | None = None
+    temperatura_conductor: float | None = None  # °C ESTIMADOS (Etapa 19a); None si no hay calibre
 
 
 class CircuitoEstado(BaseModel):
@@ -261,6 +262,8 @@ class CircuitoEstado(BaseModel):
     nombre: str
     dispositivo_id: int | None
     corriente_automatico: float | None
+    calibre_cable_mm2: float | None = None
+    ampacidad_cable: float | None = None  # A que soporta el cable (calibres_cable)
     ultima: UltimaMedicion | None  # None = el circuito aún no tiene mediciones
 
 
@@ -288,6 +291,8 @@ class EstadoTableroOut(BaseModel):
     equipos: list[EquipoEstado]
     circuitos: list[CircuitoEstado]
     alarmas_abiertas: list[AlarmaAbierta]
+    temperatura_ambiente: float        # parámetros de la temperatura estimada (Etapa 19a)
+    temperatura_max_aislacion: float
 
 
 # ---------- Umbrales de alarma por circuito (Etapa 14) ----------
