@@ -1,0 +1,59 @@
+# ElectroMap completo en tu PC con Docker: base de datos + backend + frontend.
+#
+#   1. Copiar .env.docker.example como .env (en esta misma carpeta) y completar JWT_SECRET.
+#   2. docker compose up --build
+#   3. Crear el primer administrador (solo la primera vez):
+#        docker compose exec backend python -m scripts.crear_usuario
+#   4. Abrir http://localhost:8080
+#
+# La base se crea vacía con database/schema.sql la primera vez (volumen "datos_bd").
+# Para empezar de cero: docker compose down -v   (BORRA los datos locales de Docker).
+# No toca Railway: todo vive en tu PC.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: electromap
+      POSTGRES_USER: electromap
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-electromap_local}
+    volumes:
+      - datos_bd:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U electromap -d electromap"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://electromap:${POSTGRES_PASSWORD:-electromap_local}@db:5432/electromap
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el archivo .env de la raíz (ver .env.docker.example)}
+      CORS_ORIGENES: '["http://localhost:8080"]'
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - registros:/srv/electromap/backend/logs
+      - envios_acurev:/srv/electromap/backend/ingesta_recibida
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  datos_bd:
+  registros:
+  envios_acurev:
