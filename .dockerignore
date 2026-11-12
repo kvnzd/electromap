@@ -1,0 +1,8 @@
+# Contexto de construcción del backend (raíz del repo): SOLO lo que la imagen necesita.
+# Todo lo demás queda fuera, en especial backend/.env (secretos), .venv, logs y envíos del AcuRev.
+*
+!backend/requirements.txt
+!backend/app/
+!backend/scripts/
+!database/schema.sql
+**/__pycache__
