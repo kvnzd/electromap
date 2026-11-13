@@ -172,8 +172,8 @@ export default function Umbrales() {
           <h1 className="text-2xl font-bold text-slate-900">Umbrales</h1>
           <p className="mt-1 text-sm text-slate-500">Límites de cada circuito. Si una medición los pasa, el sistema abre una alarma.</p>
         </div>
-        <label className="text-sm text-slate-700">Tablero
-          <select className="mt-1 block rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
+        <label className="w-full text-sm text-slate-700 sm:w-auto">Tablero
+          <select className="mt-1 block w-full max-w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm sm:w-auto"
             value={tableroId} onChange={(e) => elegirTablero(e.target.value)}>
             {tableros.map((t) => <option key={t.id} value={t.id}>{t.codigo} · {t.nombre}</option>)}
           </select>

@@ -1,4 +1,6 @@
 // Estructura de la aplicación: menú lateral (según el rol) + contenido.
+// En pantallas chicas (celular) el menú se esconde y se abre con el botón ☰ (Etapa 24).
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth.jsx'
 
@@ -20,21 +22,52 @@ function seccionesPara(rol) {
   return s
 }
 
+function Logo() {
+  return (
+    <>
+      <p className="text-lg font-bold text-white">
+        Electro<span className="text-amber-400">Map</span>
+      </p>
+      <p className="text-xs text-slate-400">VSC · VoltSense Cloud</p>
+    </>
+  )
+}
+
 export default function Layout() {
   const { usuario, cerrarSesion } = useAuth()
+  const [menuAbierto, setMenuAbierto] = useState(false) // solo importa en celular
+  const cerrarMenu = () => setMenuAbierto(false)
+
+  // Con el menú abierto en el celular, la tecla Escape lo cierra.
+  useEffect(() => {
+    if (!menuAbierto) return
+    const alPresionar = (e) => { if (e.key === 'Escape') setMenuAbierto(false) }
+    window.addEventListener('keydown', alPresionar)
+    return () => window.removeEventListener('keydown', alPresionar)
+  }, [menuAbierto])
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="flex w-56 flex-col bg-slate-900 text-slate-200">
-        <div className="border-b border-slate-800 px-5 py-4">
-          <p className="text-lg font-bold text-white">
-            Electro<span className="text-amber-400">Map</span>
-          </p>
-          <p className="text-xs text-slate-400">VSC · VoltSense Cloud</p>
+    <div className="min-h-screen md:flex">
+      {/* Barra superior: solo en celular */}
+      <header className="sticky top-0 z-30 flex items-center justify-between bg-slate-900 px-4 py-2 md:hidden">
+        <div><Logo /></div>
+        <button type="button" onClick={() => setMenuAbierto(true)} aria-label="Abrir menú" aria-expanded={menuAbierto}
+          className="rounded-md px-3 py-2 text-xl leading-none text-white hover:bg-slate-800">☰</button>
+      </header>
+
+      {/* Fondo oscuro detrás del menú abierto (celular): tocarlo cierra el menú */}
+      {menuAbierto && <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={cerrarMenu} aria-hidden="true" />}
+
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col overflow-y-auto bg-slate-900 text-slate-200 transition-transform
+        md:static md:z-auto md:w-56 md:translate-x-0 ${menuAbierto ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-start justify-between border-b border-slate-800 px-5 py-4">
+          <div><Logo /></div>
+          <button type="button" onClick={cerrarMenu} aria-label="Cerrar menú"
+            className="rounded-md px-2 text-xl leading-none text-slate-400 hover:text-white md:hidden">✕</button>
         </div>
         <nav className="flex-1 space-y-1 p-3">
           {seccionesPara(usuario.rol).map((s) => (
-            <NavLink key={s.ruta} to={s.ruta} end={s.ruta === '/'}
+            <NavLink key={s.ruta} to={s.ruta} end={s.ruta === '/'} onClick={cerrarMenu}
               className={({ isActive }) =>
                 `block rounded-md px-3 py-2 text-sm ${isActive ? 'bg-slate-800 font-medium text-amber-400' : 'hover:bg-slate-800'}`
               }>
@@ -53,7 +86,8 @@ export default function Layout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-x-auto p-8">
+
+      <main className="min-w-0 flex-1 overflow-x-auto p-4 md:p-8">
         <Outlet />
       </main>
     </div>
