@@ -64,9 +64,14 @@ cp .env.docker.example .env
 # 2. Construir y levantar base de datos + backend + frontend
 docker compose up --build
 
-# 3. Solo la primera vez, en otra terminal: crear el administrador VSC
+# 3. Solo la primera vez, en otra terminal: crear el administrador VSC y cargar la demostración
 docker compose exec backend python -m scripts.crear_usuario
+docker compose exec backend python -m scripts.datos_demo
+
+# 4. Abrir http://localhost:8080, iniciar sesión y entrar a "En vivo" → DEMO-01
 ```
+
+La demostración crea el tablero **DEMO-01** (3 circuitos con calibre de cable y umbrales) con 1 día de historial, y el simulador en vivo del backend le envía una medición cada 5 segundos. Todos sus datos son simulados. `datos_demo` no carga nada si la base ya tiene otras empresas (protección de la base real).
 
 | Servicio | Dirección | Detalle |
 |---|---|---|
@@ -112,7 +117,20 @@ Para otra dirección de backend: variable `VITE_API_URL` (por ejemplo en `fronte
 | `TEST_DATABASE_URL` | Solo pruebas | Base exclusiva para `pytest` y la prueba de carga; nunca la real |
 | `CORS_ORIGENES` | No | Direcciones del frontend autorizadas, en JSON: `["https://..."]` |
 | `SIMULADOR_VIVO_TABLERO` | No | Id de un tablero `DEMO` para generar datos simulados en vivo |
+| `SIMULADOR_VIVO_SEGUNDOS` | No | Cada cuántos segundos envía el simulador (por defecto 60; Docker usa 5) |
 | `PORT` | No | Puerto del backend en la imagen Docker (Railway lo entrega; por defecto 8000) |
+
+### Producción (publicado en internet)
+
+| Parte | Servicio | Dirección |
+|---|---|---|
+| Frontend | Vercel (carpeta `frontend`, `frontend/vercel.json`) | https://electromap-psi.vercel.app |
+| Backend | Railway (imagen `backend/Dockerfile`, `railway.json`) | https://electromap-production.up.railway.app |
+| Base de datos | PostgreSQL en Railway (red interna con el backend) | — |
+
+- Se publica solo al hacer **merge a `main`**: Railway reconstruye el backend (cambios en `backend/` o `database/`) y Vercel el frontend. Cada pull request recibe una vista previa de Vercel para revisarla antes del merge.
+- Variables en Railway: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGENES` (dirección de Vercel), `SIMULADOR_VIVO_TABLERO`, `SIMULADOR_VIVO_SEGUNDOS`. En Vercel: `VITE_API_URL` (dirección de Railway).
+- Los cambios de estructura de la base nunca son automáticos: se aplican aparte y con respaldo.
 
 ### Pruebas
 
@@ -150,4 +168,4 @@ electromap/
 
 ## Estado del proyecto
 
-En desarrollo — Fase 2 (Desarrollo del Proyecto APT). Plataforma funcionando con datos simulados (tablero DEMO): administración multi-tenant, tiempo real, historial, alarmas por umbral, temperatura estimada de conductores, pruebas automáticas y de carga, y Docker. Pendiente: despliegue público y lector del CSV real del AcuRev. Alcance: aplicación web de monitoreo (sin app móvil y sin control remoto del tablero).
+En desarrollo — Fase 2 (Desarrollo del Proyecto APT). Plataforma funcionando con datos simulados (tablero DEMO): administración multi-tenant, tiempo real, historial, alarmas por umbral, temperatura estimada de conductores, pruebas automáticas y de carga, Docker y despliegue público (Railway + Vercel). Pendiente: lector del CSV real del AcuRev y pruebas con el tablero real. Alcance: aplicación web de monitoreo (sin app móvil y sin control remoto del tablero).
