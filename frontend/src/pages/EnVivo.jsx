@@ -247,8 +247,8 @@ export default function EnVivo() {
           <h1 className="text-2xl font-bold text-slate-900">En vivo</h1>
           <p className="mt-1 text-sm text-slate-500">Valores actuales de cada circuito. Se actualizan solos, sin recargar la página.</p>
         </div>
-        <label className="text-sm text-slate-700">Tablero
-          <select className="mt-1 block rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
+        <label className="w-full text-sm text-slate-700 sm:w-auto">Tablero
+          <select className="mt-1 block w-full max-w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm sm:w-auto"
             value={tableroId} onChange={(e) => setTableroId(e.target.value)}>
             {tableros.map((t) => <option key={t.id} value={t.id}>{t.codigo} · {t.nombre}</option>)}
           </select>

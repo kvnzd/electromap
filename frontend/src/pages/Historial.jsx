@@ -111,8 +111,8 @@ export default function Historial() {
 
       {/* Filtros: una fila, sobre todo lo que filtran */}
       <div className="flex flex-wrap items-end gap-3 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
-        <label className="text-sm text-slate-700">Tablero
-          <select className={`${claseCampo} mt-1 block`} value={tableroId} onChange={(e) => elegirTablero(e.target.value)}>
+        <label className="w-full text-sm text-slate-700 sm:w-auto">Tablero
+          <select className={`${claseCampo} mt-1 block w-full max-w-full sm:w-auto`} value={tableroId} onChange={(e) => elegirTablero(e.target.value)}>
             {tableros.map((t) => <option key={t.id} value={t.id}>{t.codigo} · {t.nombre}</option>)}
           </select>
         </label>
