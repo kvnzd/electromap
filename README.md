@@ -57,9 +57,14 @@ Modelo de acceso multi-tenant:
 Requisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/) con el motor encendido ("Engine running").
 
 ```bash
-# 1. Variables: copiar la plantilla como .env en la RAÍZ y completar JWT_SECRET
+# 0. Descargar el proyecto y entrar a su carpeta
+git clone https://github.com/kvnzd/electromap.git
+cd electromap
+
+# 1. Variables: copiar la plantilla como .env en la RAÍZ
 cp .env.docker.example .env
-#    (generar la clave con: python -c "import secrets; print(secrets.token_hex(32))")
+#    Generar una clave:  python -c "import secrets; print(secrets.token_hex(32))"
+#    Abrir .env con un editor (ej. notepad .env) y pegarla después de JWT_SECRET=
 
 # 2. Construir y levantar base de datos + backend + frontend
 docker compose up --build
