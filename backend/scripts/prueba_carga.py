@@ -334,7 +334,7 @@ Etapa 20 — Historia 008. Generado por `python -m scripts.prueba_carga`.
 - Cada equipo hace además un `POST /ingesta` por segundo (como el AcuRev).
 - **{w['navegadores']} navegadores** conectados por WebSocket y **{p['lectores']} usuarios** consultando estado actual, historial y alarmas sin pausa.
 - Umbral de corriente bajo (12 A) en el C1 de cada tablero, para que el motor de alarmas trabaje durante la prueba.
-- Backend local (uvicorn, un proceso) y base de datos de **pruebas** en Railway: las latencias incluyen el viaje de red hasta Railway.
+- Backend (uvicorn, un proceso) y base de datos de **pruebas** en Railway: las latencias incluyen el viaje de red entre ambos (medido en la línea siguiente).
 - Latencia de red hasta la base de datos: **{r['latencia_bd_ms']} ms** por consulta (mediana de 10 `SELECT 1`).
 - Duración real de la carga: {r['duracion_s']} s. Ciclos atrasados (un equipo no alcanzó su segundo): {r['atrasos']}.
 
