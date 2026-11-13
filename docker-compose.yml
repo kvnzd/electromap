@@ -2,9 +2,10 @@
 #
 #   1. Copiar .env.docker.example como .env (en esta misma carpeta) y completar JWT_SECRET.
 #   2. docker compose up --build
-#   3. Crear el primer administrador (solo la primera vez):
-#        docker compose exec backend python -m scripts.crear_usuario
-#   4. Abrir http://localhost:8080
+#   3. Solo la primera vez, en otra terminal:
+#        docker compose exec backend python -m scripts.crear_usuario   (administrador: rol vsc)
+#        docker compose exec backend python -m scripts.datos_demo      (tablero DEMO-01 con datos)
+#   4. Abrir http://localhost:8080 → En vivo → DEMO-01 (se mueve cada 5 s con el simulador)
 #
 # La base se crea vacía con database/schema.sql la primera vez (volumen "datos_bd").
 # Para empezar de cero: docker compose down -v   (BORRA los datos locales de Docker).
@@ -34,6 +35,9 @@ services:
       DATABASE_URL: postgresql://electromap:${POSTGRES_PASSWORD:-electromap_local}@db:5432/electromap
       JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el archivo .env de la raíz (ver .env.docker.example)}
       CORS_ORIGENES: '["http://localhost:8080"]'
+      # Simulador en vivo del tablero de demostración (DEMO-01 es el número 1 en una base nueva).
+      SIMULADOR_VIVO_TABLERO: ${SIMULADOR_VIVO_TABLERO:-1}
+      SIMULADOR_VIVO_SEGUNDOS: ${SIMULADOR_VIVO_SEGUNDOS:-5}
     depends_on:
       db:
         condition: service_healthy

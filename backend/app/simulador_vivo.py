@@ -58,9 +58,14 @@ def _un_envio_real() -> None:
 async def simular_en_vivo() -> None:
     """Bucle: un envío simulado cada `simulador_vivo_segundos` (corre en un hilo aparte)."""
     log.info("Simulador en vivo ACTIVO para el tablero %s", settings.simulador_vivo_tablero)
+    ultimo_error = None
     while True:
         try:
             await asyncio.to_thread(_un_envio_real)
-        except Exception:
-            log.exception("Simulador en vivo: error (¿el tablero es DEMO y tiene circuitos con equipo?)")
+            ultimo_error = None
+        except Exception as error:
+            # El mismo error en cada vuelta (ej. el tablero DEMO aún no existe) se registra una sola vez.
+            if str(error) != ultimo_error:
+                log.exception("Simulador en vivo: error (¿el tablero es DEMO y tiene circuitos con equipo?)")
+                ultimo_error = str(error)
         await asyncio.sleep(settings.simulador_vivo_segundos)
