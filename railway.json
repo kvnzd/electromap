@@ -2,8 +2,8 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "backend/Dockerfile",
-    "watchPatterns": ["backend/**", "database/**"]
+    "dockerfilePath": "maquinasVirtuales/backend.Dockerfile",
+    "watchPatterns": ["src/backend/**", "src/database/**", "maquinasVirtuales/backend.Dockerfile", ".dockerignore"]
   },
   "deploy": {
     "healthcheckPath": "/health",

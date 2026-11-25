@@ -1,5 +1,7 @@
 # ElectroMap completo en tu PC con Docker: base de datos + backend + frontend.
 #
+# Todos los comandos se ejecutan DENTRO de la carpeta maquinasVirtuales/:
+#   0. cd maquinasVirtuales
 #   1. Copiar .env.docker.example como .env (en esta misma carpeta) y completar JWT_SECRET.
 #   2. docker compose up --build
 #   3. Solo la primera vez, en otra terminal:
@@ -7,9 +9,12 @@
 #        docker compose exec backend python -m scripts.datos_demo      (tablero DEMO-01 con datos)
 #   4. Abrir http://localhost:8080 → En vivo → DEMO-01 (se mueve cada 5 s con el simulador)
 #
-# La base se crea vacía con database/schema.sql la primera vez (volumen "datos_bd").
+# La base se crea vacía con src/database/schema.sql la primera vez (volumen "datos_bd").
 # Para empezar de cero: docker compose down -v   (BORRA los datos locales de Docker).
 # No toca Railway: todo vive en tu PC.
+
+# Nombre fijo del proyecto: conserva los mismos contenedores y volúmenes que antes de mover el archivo.
+name: electromaps
 
 services:
   db:
@@ -20,7 +25,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-electromap_local}
     volumes:
       - datos_bd:/var/lib/postgresql/data
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ../src/database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U electromap -d electromap"]
       interval: 5s
@@ -29,11 +34,11 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ..
+      dockerfile: maquinasVirtuales/backend.Dockerfile
     environment:
       DATABASE_URL: postgresql://electromap:${POSTGRES_PASSWORD:-electromap_local}@db:5432/electromap
-      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el archivo .env de la raíz (ver .env.docker.example)}
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en maquinasVirtuales/.env (ver .env.docker.example)}
       CORS_ORIGENES: '["http://localhost:8080"]'
       # Simulador en vivo del tablero de demostración (DEMO-01 es el número 1 en una base nueva).
       SIMULADOR_VIVO_TABLERO: ${SIMULADOR_VIVO_TABLERO:-1}
@@ -49,7 +54,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ../src/frontend
+      dockerfile: ../../maquinasVirtuales/frontend.Dockerfile
       args:
         VITE_API_URL: http://localhost:8000
     depends_on:

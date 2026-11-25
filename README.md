@@ -57,11 +57,11 @@ Modelo de acceso multi-tenant:
 Requisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/) con el motor encendido ("Engine running").
 
 ```bash
-# 0. Descargar el proyecto y entrar a su carpeta
+# 0. Descargar el proyecto y entrar a la carpeta de Docker
 git clone https://github.com/kvnzd/electromap.git
-cd electromap
+cd electromap/maquinasVirtuales
 
-# 1. Variables: copiar la plantilla como .env en la RAÍZ
+# 1. Variables: copiar la plantilla como .env en esta misma carpeta (maquinasVirtuales)
 cp .env.docker.example .env
 #    Generar una clave:  python -c "import secrets; print(secrets.token_hex(32))"
 #    Abrir .env con un editor (ej. notepad .env) y pegarla después de JWT_SECRET=
@@ -82,18 +82,19 @@ La demostración crea el tablero **DEMO-01** (3 circuitos con calibre de cable y
 |---|---|---|
 | Frontend | http://localhost:8080 | React compilado, servido por nginx |
 | Backend (API) | http://localhost:8000/docs | FastAPI + WebSocket (`ws://localhost:8000/ws/tableros/{id}`) |
-| Base de datos | contenedor `db` (PostgreSQL 16) | Se crea vacía con `database/schema.sql` la primera vez |
+| Base de datos | contenedor `db` (PostgreSQL 16) | Se crea vacía con `src/database/schema.sql` la primera vez |
 
+- Todos los comandos `docker compose` se ejecutan dentro de `maquinasVirtuales/`.
 - Detener: `Ctrl+C` o `docker compose down`. Empezar de cero (borra los datos locales de Docker): `docker compose down -v`.
-- Archivos Docker: `backend/Dockerfile` (se construye desde la raíz), `frontend/Dockerfile` (compila con Node y sirve con nginx), `frontend/nginx.conf`, `docker-compose.yml`, `.dockerignore`, `.env.docker.example`.
-- Los secretos nunca entran a las imágenes: `.dockerignore` deja fuera `backend/.env`.
+- Archivos Docker, en `maquinasVirtuales/`: `backend.Dockerfile` (se construye desde la raíz del repositorio), `frontend.Dockerfile` (compila con Node y sirve con nginx, usando `src/frontend/nginx.conf`), `docker-compose.yml` y `.env.docker.example`. El archivo `.dockerignore` queda en la raíz porque Railway y Docker construyen el backend desde ahí.
+- Los secretos nunca entran a las imágenes: `.dockerignore` deja fuera `src/backend/.env`.
 
 ### Opción B — Desarrollo sin Docker
 
 **Backend** (Python 3.13):
 
 ```bash
-cd backend
+cd src/backend
 python -m venv .venv
 .venv\Scripts\activate          # Linux/Mac: source .venv/bin/activate
 pip install -r requirements-dev.txt
@@ -105,12 +106,12 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 **Frontend** (Node 22):
 
 ```bash
-cd frontend
+cd src/frontend
 npm install
 npm run dev                      # http://localhost:5173 (usa el backend en http://127.0.0.1:8000)
 ```
 
-Para otra dirección de backend: variable `VITE_API_URL` (por ejemplo en `frontend/.env`).
+Para otra dirección de backend: variable `VITE_API_URL` (por ejemplo en `src/frontend/.env`).
 
 ### Variables de entorno del backend
 
@@ -129,20 +130,20 @@ Para otra dirección de backend: variable `VITE_API_URL` (por ejemplo en `fronte
 
 | Parte | Servicio | Dirección |
 |---|---|---|
-| Frontend | Vercel (carpeta `frontend`, `frontend/vercel.json`) | https://electromap-psi.vercel.app |
-| Backend | Railway (imagen `backend/Dockerfile`, `railway.json`) | https://electromap-production.up.railway.app |
+| Frontend | Vercel (carpeta raíz `src/frontend`, `src/frontend/vercel.json`) | https://electromap-psi.vercel.app |
+| Backend | Railway (imagen `maquinasVirtuales/backend.Dockerfile`, `railway.json`) | https://electromap-production.up.railway.app |
 | Base de datos | PostgreSQL en Railway (red interna con el backend) | — |
 
-- Se publica solo al hacer **merge a `main`**: Railway reconstruye el backend (cambios en `backend/` o `database/`) y Vercel el frontend. Cada pull request recibe una vista previa de Vercel para revisarla antes del merge.
+- Se publica solo al hacer **merge a `main`**: Railway reconstruye el backend (cambios en `src/backend/`, `src/database/` o en su Dockerfile) y Vercel el frontend. Cada pull request recibe una vista previa de Vercel para revisarla antes del merge.
 - Variables en Railway: `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGENES` (dirección de Vercel), `SIMULADOR_VIVO_TABLERO`, `SIMULADOR_VIVO_SEGUNDOS`. En Vercel: `VITE_API_URL` (dirección de Railway).
 - Los cambios de estructura de la base nunca son automáticos: se aplican aparte y con respaldo.
 
 ### Pruebas
 
 ```bash
-cd backend
+cd src/backend
 pytest -q                            # pruebas automáticas (usa TEST_DATABASE_URL)
-python -m scripts.prueba_carga       # prueba de carga; informe en backend/resultados_carga/
+python -m scripts.prueba_carga       # prueba de carga; informe en src/backend/resultados_carga/
 cd ../frontend && npm run lint
 ```
 
@@ -156,18 +157,23 @@ Proyecto de Título **individual** — Ingeniería en Informática, Duoc UC (PTY
 
 ## Metodología
 
-Desarrollo ágil organizado en épicas (dimensionadas con Planning Poker / escala Fibonacci) distribuidas en un cronograma de 20 semanas (carta Gantt). El detalle de la definición del proyecto, la visión, el PMV y las épicas está documentado en las carpetas `Fase 1/` y `Fase 2/`.
+Desarrollo ágil organizado en épicas (dimensionadas con Planning Poker / escala Fibonacci) distribuidas en un cronograma de 20 semanas (carta Gantt). El detalle de la definición del proyecto, la visión, el PMV y las épicas está documentado en las carpetas `Fase 1/`, `Fase 2/` y `Fase 3/`.
 
 ## Estructura del repositorio
 
 ```
 electromap/
-├── backend/              # FastAPI: app/ (API, WebSocket, alarmas), scripts/, tests/, Dockerfile
-├── frontend/             # React + Vite + Tailwind, Dockerfile, nginx.conf
-├── database/schema.sql   # Estructura oficial de la base de datos
-├── docker-compose.yml    # Sistema completo con Docker (db + backend + frontend)
-├── Fase 1/               # Evidencias de la Fase 1
-├── Fase 2/               # Evidencias de la Fase 2
+├── src/                      # Código fuente
+│   ├── backend/              # FastAPI: app/ (API, WebSocket, alarmas), scripts/, tests/
+│   ├── frontend/             # React + Vite + Tailwind, nginx.conf, vercel.json
+│   └── database/schema.sql   # Estructura oficial de la base de datos
+├── maquinasVirtuales/        # Configuración Docker: docker-compose.yml, backend.Dockerfile,
+│                             # frontend.Dockerfile, .env.docker.example
+├── Fase 1/                   # Evidencias de la Fase 1
+├── Fase 2/                   # Evidencias de la Fase 2
+├── Fase 3/                   # Evidencias de la Fase 3
+├── railway.json              # Despliegue del backend en Railway
+├── LICENSE
 └── README.md
 ```
 

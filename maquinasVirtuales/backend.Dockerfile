@@ -1,7 +1,7 @@
 # Imagen del backend de ElectroMap (FastAPI + uvicorn).
-# Se construye desde la RAÍZ del repositorio (necesita backend/ y database/):
-#     docker build -f backend/Dockerfile -t electromap-backend .
-# La usan docker-compose.yml (local) y Railway (producción).
+# Se construye desde la RAÍZ del repositorio (necesita src/backend/ y src/database/):
+#     docker build -f maquinasVirtuales/backend.Dockerfile -t electromap-backend .
+# La usan maquinasVirtuales/docker-compose.yml (local) y Railway (producción).
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -12,13 +12,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /srv/electromap/backend
 
 # 1) Dependencias primero: si solo cambia el código, Docker reutiliza esta capa.
-COPY backend/requirements.txt .
+COPY src/backend/requirements.txt .
 RUN pip install -r requirements.txt
 
 # 2) Código y schema (los secretos NO se copian: .dockerignore deja fuera .env).
-COPY backend/app ./app
-COPY backend/scripts ./scripts
-COPY database/schema.sql /srv/electromap/database/schema.sql
+COPY src/backend/app ./app
+COPY src/backend/scripts ./scripts
+COPY src/database/schema.sql /srv/electromap/database/schema.sql
 
 # 3) Usuario sin privilegios; carpetas donde la app escribe (registros y envíos del AcuRev).
 RUN useradd --create-home --uid 1000 electromap \
