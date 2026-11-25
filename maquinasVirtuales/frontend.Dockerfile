@@ -1,5 +1,6 @@
 # Imagen del frontend de ElectroMap: compila React con Vite y lo sirve con nginx.
-#     docker build -t electromap-frontend --build-arg VITE_API_URL=http://localhost:8000 frontend
+#     docker build -f maquinasVirtuales/frontend.Dockerfile -t electromap-frontend --build-arg VITE_API_URL=http://localhost:8000 src/frontend
+# El contexto es src/frontend (ahí están package.json, el código y nginx.conf).
 # VITE_API_URL queda fija en el código compilado (dirección del backend vista desde el navegador).
 
 # Etapa 1: compilar
