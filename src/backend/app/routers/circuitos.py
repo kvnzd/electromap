@@ -1,8 +1,10 @@
 """Administración de circuitos: lo que mide cada canal del AcuRev.
 
-canal_acurev es el "puente" entre el CSV del equipo y la base de datos:
-cuando el AcuRev envía datos del canal "C1", el sistema busca el circuito
-con canal_acurev = "C1" dentro de ese mismo equipo.
+canal_acurev es el "puente" entre el CSV del equipo y la base de datos (Etapa 12):
+el CSV identifica cada canal por su NÚMERO (columnas I001_A, P001_kW...), no por el
+nombre de usuario del equipo ("C1"). Por eso canal_acurev es "001" (monofásico) o
+"002,003,004" (trifásico, un canal por fase A, B, C). Se guarda siempre con 3 dígitos:
+"1" queda "001", así el mismo canal no puede quedar en dos circuitos.
 """
 from decimal import Decimal
 
@@ -18,6 +20,7 @@ from app.autorizacion import (
     tableros_visibles,
 )
 from app.db import get_db
+from app.lector_csv import canales
 from app.deps import get_usuario_actual
 from app.models import CalibreCable, Circuito, Dispositivo, Tablero, Usuario
 from app.schemas import CircuitoCrear, CircuitoEditar, CircuitoOut
@@ -46,6 +49,12 @@ def _validar_conexion(
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "El equipo no está instalado en el tablero de este circuito")
     if canal_acurev is not None and dispositivo_id is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Para indicar el canal del AcuRev, el circuito debe tener un equipo asignado")
+    if canal_acurev is not None and not canales(canal_acurev):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "El canal del AcuRev debe ser el número del canal (1 a 18): '001' para un circuito "
+            "monofásico o '002,003,004' para uno trifásico (no el nombre, como 'C1')",
+        )
     if calibre is not None and db.get(CalibreCable, calibre) is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"El calibre {calibre} mm² no está registrado en la tabla de calibres")
 
@@ -74,6 +83,8 @@ def crear_circuito(datos: CircuitoCrear, usuario: Usuario = Depends(requiere_edi
     obtener_en_scope(db, usuario, Tablero, datos.tablero_id, tableros_visibles(usuario), "tablero")
     _validar_conexion(db, usuario, datos.tablero_id, datos.dispositivo_id, datos.canal_acurev, datos.calibre_cable_mm2)
 
+    if datos.canal_acurev is not None:
+        datos.canal_acurev = ",".join(canales(datos.canal_acurev))  # "1" → "001"
     circuito = Circuito(**datos.model_dump())
     db.add(circuito)
     guardar(db, circuito, _DUPLICADO)
@@ -104,6 +115,8 @@ def editar_circuito(
         cambios.get("canal_acurev", circuito.canal_acurev),
         cambios.get("calibre_cable_mm2", circuito.calibre_cable_mm2),
     )
+    if cambios.get("canal_acurev") is not None:
+        datos.canal_acurev = ",".join(canales(datos.canal_acurev))  # "1" → "001"
     aplicar_cambios(circuito, datos)
     guardar(db, circuito, _DUPLICADO)
     registrar_auditoria(usuario, f"EDITA circuito id={circuito.id} cambios={sorted(cambios)}")

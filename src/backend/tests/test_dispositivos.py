@@ -93,7 +93,7 @@ def test_crear_circuito_conectado_a_su_equipo(cliente_http, db, escenario):
                                               "codigo": "C1", "nombre": "Alumbrado", "canal_acurev": "1"},
                           headers=auth(usr["emp_a"]))
     assert r.status_code == 201
-    assert r.json()["dispositivo_id"] == equipo.id and r.json()["canal_acurev"] == "1"
+    assert r.json()["dispositivo_id"] == equipo.id and r.json()["canal_acurev"] == "001"  # se guarda con 3 dígitos
 
 
 def test_circuito_no_acepta_equipo_de_otro_tablero(cliente_http, db, escenario):

@@ -205,7 +205,7 @@ const camposCircuito = [
   { nombre: 'codigo', etiqueta: 'Código', requerido: true, maximo: 20, ayuda: 'Ej: C1' },
   { nombre: 'nombre', etiqueta: 'Nombre', requerido: true, maximo: 100, ayuda: 'Ej: Alumbrado' },
   { nombre: 'canal_acurev', etiqueta: 'Canal AcuRev', maximo: 30,
-    ayuda: 'Identificador del canal en el CSV del equipo. Requiere un equipo asignado.' },
+    ayuda: 'Número del canal en el AcuRev: 001 (monofásico) o 002,003,004 (trifásico, fases A, B, C). No el nombre (C1). Requiere un equipo asignado.' },
   { nombre: 'calibre_cable_mm2', etiqueta: 'Calibre del cable (mm²)', tipo: 'numero',
     ayuda: 'Debe existir en la tabla de calibres. Déjalo vacío si aún no está cargada.' },
   { nombre: 'corriente_automatico', etiqueta: 'Corriente del automático (A)', tipo: 'numero' },
