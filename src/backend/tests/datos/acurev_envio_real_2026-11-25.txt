@@ -1,0 +1,17 @@
+--------------------------bd89d919cbfa4f03
+Content-Disposition: form-data; name="action"
+
+upload
+--------------------------bd89d919cbfa4f03
+Content-Disposition: form-data; name="datasource"
+
+EHM23080411
+--------------------------bd89d919cbfa4f03
+Content-Disposition: form-data; name="file"; filename="EHM23080411-logger1-2026-11-25T22-41-00-0300-1min.csv"
+Content-Type: text/csv
+
+Time,P_kW,PF,Vnavg_V,Iavg_A,Va_V,Ia_A,Pa_kW,PFa,Vb_V,Ib_A,Pb_kW,PFb,Vc_V,Ic_A,Pc_kW,PFc,I001_A,P001_kW,PF001,I002_A,P002_kW,PF002,I003_A,P003_kW,PF003,I004_A,P004_kW,PF004,I005_A,P005_kW,PF005,I006_A,P006_kW,PF006,I007_A,P007_kW,PF007,I008_A,P008_kW,PF008,I009_A,P009_kW,PF009,I010_A,P010_kW,PF010,I011_A,P011_kW,PF011,I012_A,P012_kW,PF012,I013_A,P013_kW,PF013,I014_A,P014_kW,PF014,I015_A,P015_kW,PF015,I016_A,P016_kW,PF016,I017_A,P017_kW,PF017,I018_A,P018_kW,PF018,Ps1_kW,PFs1,Ps2_kW,PFs2,Ps3_kW,PFs3,Ps4_kW,PFs4,Ps5_kW,PFs5,Ps6_kW,PFs6,EP_IMP_kWh,EPa_IMP_kWh,EPb_IMP_kWh,EPc_IMP_kWh,EP001_IMP_kWh,EP002_IMP_kWh,EP003_IMP_kWh,EP004_IMP_kWh,EP005_IMP_kWh,EP006_IMP_kWh,EP007_IMP_kWh,EP008_IMP_kWh,EP009_IMP_kWh,EP010_IMP_kWh,EP011_IMP_kWh,EP012_IMP_kWh,EP013_IMP_kWh,EP014_IMP_kWh,EP015_IMP_kWh,EP016_IMP_kWh,EP017_IMP_kWh,EP018_IMP_kWh,EPs1_IMP_kWh,EPs2_IMP_kWh,EPs3_IMP_kWh,EPs4_IMP_kWh,EPs5_IMP_kWh,EPs6_IMP_kWh
+2026-11-25T22:40:00-0300,0.222,0.902,163.213,0.364,229.795,1.092,0.222,0.902,130.004,0.0,0.0,1.0,129.841,0.0,0.0,1.0,1.228,0.222,0.853,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,1.0,0.0,1.0,0.5,0.5,0.0,0.0,0.5,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+
+
+--------------------------bd89d919cbfa4f03--

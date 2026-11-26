@@ -1,9 +1,14 @@
-"""Receptor de datos del AcuRev (Etapa 11 — Historia 003).
+"""Receptor de datos del AcuRev (Etapas 11 y 12 — Historia 003).
 
-El AcuRev envía sus mediciones por HTTP POST a este endpoint. En esta etapa
-el receptor funciona como REGISTRADOR: valida la clave del equipo, actualiza
-`ultima_comunicacion` y guarda cada envío tal como llega (sin interpretarlo),
-para conocer el formato real del CSV. La interpretación es la Etapa 12.
+El AcuRev envía sus mediciones por HTTP POST a este endpoint. Por cada envío:
+1. Valida la clave del equipo y actualiza `ultima_comunicacion`.
+2. Guarda el envío tal como llega (registro crudo, útil para revisar el formato).
+3. Etapa 12: lee el CSV (app/lector_csv.py) y guarda las mediciones de cada circuito
+   del equipo según su `canal_acurev`, por el mismo camino que el resto del sistema
+   (servicio_mediciones: sin duplicados, alarmas y aviso en tiempo real).
+Si el CSV no se puede leer, responde 200 igual (el envío quedó guardado) y lo informa
+en "avisos": reintentarlo no lo arreglaría. Si falla la base de datos, responde 500
+y el AcuRev lo reenvía; los duplicados se descartan.
 
 Autenticación (sin usuario ni JWT: quien llama es una máquina):
 - Basic:  usuario cualquiera, contraseña = clave de ingesta "em_..."
@@ -21,13 +26,16 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
-from app.models import Dispositivo
+from app.lector_csv import FormatoInvalido, extraer_csv, leer_filas, mediciones_del_envio
+from app.models import Circuito, Dispositivo
 from app.security import hashear_clave_ingesta
+from app.servicio_mediciones import registrar_mediciones
 from app.tiempo_real import canal
 
 router = APIRouter(prefix="/ingesta", tags=["ingesta (equipos AcuRev)"])
 
 log_seguridad = logging.getLogger("electromap.seguridad")
+log_auditoria = logging.getLogger("electromap.auditoria")
 
 # 401 con desafío "Basic": algunos equipos solo envían usuario/clave
 # después de recibir este desafío del servidor.
@@ -84,13 +92,34 @@ async def _leer_cuerpo(request: Request) -> bytes:
     return cuerpo
 
 
+def _leer_mediciones(db: Session, equipo: Dispositivo, cuerpo: bytes, content_type: str) -> dict:
+    """Etapa 12: CSV del envío → mediciones guardadas. Devuelve el resumen para la respuesta."""
+    try:
+        filas = [f for _, texto in extraer_csv(cuerpo, content_type) for f in leer_filas(texto)]
+    except FormatoInvalido as error:
+        log_auditoria.warning("INGESTA dispositivo_id=%s: CSV no legible (%s)", equipo.id, error)
+        return {"filas_csv": 0, "mediciones_nuevas": 0, "avisos": [str(error)]}
+
+    circuitos = db.scalars(
+        select(Circuito).where(Circuito.dispositivo_id == equipo.id, Circuito.activo,
+                               Circuito.canal_acurev.is_not(None))
+    ).all()
+    mediciones, avisos = mediciones_del_envio(filas, equipo.id, circuitos)
+    nuevas = registrar_mediciones(db, mediciones, canal.publicar_desde_hilo)
+    for aviso in avisos:
+        log_auditoria.warning("INGESTA dispositivo_id=%s: %s", equipo.id, aviso)
+    log_auditoria.info("INGESTA dispositivo_id=%s: %s filas, %s mediciones nuevas",
+                       equipo.id, len(filas), nuevas)
+    return {"filas_csv": len(filas), "mediciones_nuevas": nuevas, "avisos": avisos}
+
+
 @router.post("")
 def recibir_envio(
     request: Request,
     cuerpo: bytes = Depends(_leer_cuerpo),
     db: Session = Depends(get_db),
 ):
-    """Recibe un envío del AcuRev, lo guarda tal cual y marca la última comunicación."""
+    """Recibe un envío del AcuRev: lo guarda tal cual, marca la comunicación y lee el CSV."""
     equipo = _equipo_autenticado(request, db)
     ahora = datetime.now(timezone.utc)
 
@@ -113,5 +142,9 @@ def recibir_envio(
     canal.publicar_desde_hilo(tablero_id, {
         "tipo": "comunicacion", "dispositivo_id": equipo.id, "en": ahora.isoformat(), "bytes": len(cuerpo),
     })
-    return {"recibido": True, "dispositivo_id": equipo.id, "bytes": len(cuerpo), "archivo": archivo}
+
+    resumen = {"filas_csv": 0, "mediciones_nuevas": 0, "avisos": []}
+    if cuerpo:
+        resumen = _leer_mediciones(db, equipo, cuerpo, request.headers.get("content-type", ""))
+    return {"recibido": True, "dispositivo_id": equipo.id, "bytes": len(cuerpo), "archivo": archivo, **resumen}
     
