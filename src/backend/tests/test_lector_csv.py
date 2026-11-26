@@ -182,3 +182,30 @@ def test_canal_1_es_el_mismo_001_y_no_se_duplica(cliente_http, escenario, equipo
 def test_canal_trifasico_se_guarda_con_tres_digitos(cliente_http, escenario, equipo_con_circuito):
     r = _crear_circuito(cliente_http, escenario, equipo_con_circuito[0], "C9", "2, 3, 4")
     assert r.status_code == 201 and r.json()["canal_acurev"] == "002,003,004"
+
+
+# ---------- 3. Envío del botón "Test" del AcuRev ----------
+
+def _envio_test():
+    """Como el envío real, pero con Time en segundos Unix y todo en 0,0 (lo que manda el botón Test)."""
+    texto = ENVIO_REAL.decode()
+    encabezado, fila = [l for l in texto.splitlines() if l.startswith(("Time,", "2026-11-25T"))]
+    fila_test = ",".join(["1795692660"] + ["0.0"] * (len(fila.split(",")) - 1))
+    return texto.replace(fila, fila_test).encode()
+
+
+def test_envio_del_boton_test_se_descarta_con_aviso():
+    [(_, texto)] = extraer_csv(_envio_test(), TIPO_REAL)
+    mediciones, avisos = mediciones_del_envio(leer_filas(texto), 1, [_circuito(7, "001")])
+    assert mediciones == []                                 # no se guarda una medición en cero
+    assert any("hora inválida" in a and "1795692660" in a for a in avisos)
+
+
+def test_boton_test_por_ingesta_responde_200_y_no_guarda(cliente_http, db, carpeta, equipo_con_circuito):
+    _, circuito, clave = equipo_con_circuito
+    r = cliente_http.post("/ingesta", content=_envio_test(), auth=("acurev", clave),
+                          headers={"Content-Type": TIPO_REAL})
+    assert r.status_code == 200                             # el AcuRev ve "Success"
+    assert r.json()["filas_csv"] == 1 and r.json()["mediciones_nuevas"] == 0
+    assert any("hora inválida" in a for a in r.json()["avisos"])
+    assert db.scalars(select(Medicion).where(Medicion.circuito_id == circuito.id)).all() == []
